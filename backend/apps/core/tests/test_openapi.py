@@ -28,7 +28,7 @@ def test_openapi_schema_is_public_and_complete() -> None:
     assert schema["components"]["securitySchemes"]["jwtAuth"] == {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "Bearer",
+        "bearerFormat": "JWT",
     }
     assert schema["paths"]["/api/v1/health/"]["get"].get("security", []) == []
     assert schema["paths"]["/api/v1/auth/me/"]["get"]["security"] == [{"jwtAuth": []}]
