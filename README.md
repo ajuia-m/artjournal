@@ -96,7 +96,9 @@ DI-фреймворк не используется: база и репозит�
 Подробная документация:
 
 - [текущая модель данных Room v2](docs/data-model-current.md);
-- [ADR-0001: переход к backend на Django/DRF и PostgreSQL](docs/adr/0001-server-backed-architecture.md).
+- [ADR-0001: переход к backend на Django/DRF и PostgreSQL](docs/adr/0001-server-backed-architecture.md);
+- [целевая серверная модель и контракт импорта](docs/server-data-model.md);
+- [формат резервной копии JSON v1](docs/backup-format-v1.md).
 
 ## Стек
 
