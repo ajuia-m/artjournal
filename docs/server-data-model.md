@@ -42,8 +42,8 @@ erDiagram
 |---|---|
 | `accounts` | Минимальный кастомный `User`. JWT и пользовательские endpoints пока не входят в реализацию. |
 | `schools` | `School` как обязательная граница владения данными. `Membership` и роли добавляются позднее. |
-| `education` | `AcademicYear`, `AcademicPeriod`, `Group`, `Student`, `Enrollment`, `ScheduleEntry`, `CalendarException`. |
-| `curriculum` | `Subject`, `GroupSubject`, `Topic`, `TopicCriterion`, `TopicAssignment`. |
+| `education` | `AcademicYear`, `AcademicPeriod`, `Group`, `Student`, `Enrollment`, `CalendarException`. |
+| `curriculum` | `Subject`, `GroupSubject`, `ScheduleEntry`, `Topic`, `TopicCriterion`, `TopicGroupAssignment`, `TopicPeriodAssignment`. |
 | `journal` | `Lesson`, `LessonTopic`, `StudentLessonState`, `StudentTopicProgress`, `CriterionScore`. |
 | `tuition` | `Payment`; сумма хранится как decimal, валюта берётся из школы. |
 | `imports` | `ImportBatch`, `LegacyObjectMap`, валидатор, импорт-сервис и management-команда. |
@@ -69,8 +69,9 @@ erDiagram
 ### Темы и занятия
 
 - `Topic` принадлежит дисциплине и содержит упорядоченные `TopicCriterion`.
-- `TopicAssignment` назначает тему группе и при необходимости учебному
-  периоду.
+- `TopicGroupAssignment` и `TopicPeriodAssignment` независимо назначают тему
+  группам и учебным периодам. Тема может быть связана с несколькими группами и
+  несколькими периодами без искусственной пары «группа — период».
 - `Lesson` является фактом проведения занятия для группы и дисциплины в
   конкретную дату.
 - `LessonTopic` связывает занятия и темы отношением many-to-many и хранит
@@ -109,7 +110,7 @@ erDiagram
 | `lessons` | `Lesson`; запись с `isNonSchoolDay=true` становится `CalendarException`. |
 | `lessons[].topicId` | Одна исходная связь `LessonTopic`; после импорта сервер допускает несколько тем занятия. |
 | `studentLessonStates` | `StudentLessonState`. |
-| `topics` | `Topic`, `TopicCriterion` и `TopicAssignment`. |
+| `topics` | `Topic`, `TopicCriterion`, `TopicGroupAssignment` и `TopicPeriodAssignment`. |
 | `studentTopicProgress` | `StudentTopicProgress` и `CriterionScore`. |
 | `auditLogs` | `LegacyAuditEntry`, изолированная от server audit. |
 
