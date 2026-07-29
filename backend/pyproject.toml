@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+addopts = "-q --strict-markers"
+python_files = ["test_*.py"]
+pythonpath = ["."]
+testpaths = ["apps"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["B", "DJ", "E", "F", "I", "UP"]
