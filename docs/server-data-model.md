@@ -1,6 +1,6 @@
 # Целевая серверная модель Art Journal
 
-> Статус: реализованные серверная модель и импорт JSON v1.
+> Статус: реализованы серверная модель, импорт JSON v1, JWT и роли.
 
 Документ уточняет [ADR-0001](adr/0001-server-backed-architecture.md) и связывает
 нормализованную PostgreSQL-модель с
@@ -40,8 +40,8 @@ erDiagram
 
 | Приложение | Сущности и ответственность |
 |---|---|
-| `accounts` | Минимальный кастомный `User`. JWT и пользовательские endpoints пока не входят в реализацию. |
-| `schools` | `School` как обязательная граница владения данными. `Membership` и роли добавляются позднее. |
+| `accounts` | Кастомный `User`, JWT access/refresh tokens, blacklist и endpoint текущего пользователя. |
+| `schools` | `School`, членства с ролями, назначения преподавателей и серверная матрица доступа. |
 | `education` | `AcademicYear`, `AcademicPeriod`, `Group`, `Student`, `Enrollment`, `CalendarException`. |
 | `curriculum` | `Subject`, `GroupSubject`, `ScheduleEntry`, `Topic`, `TopicCriterion`, `TopicGroupAssignment`, `TopicPeriodAssignment`. |
 | `journal` | `Lesson`, `LessonTopic`, `StudentLessonState`, `StudentTopicProgress`, `CriterionScore`. |
@@ -162,10 +162,9 @@ checksum совпадает: партия импорта принадлежит 
 Предупреждения допустимы для восстанавливаемых особенностей legacy-данных,
 например отсутствия времени занятия. Они входят в итоговый отчёт.
 
-## Интерфейс первого этапа
+## Интерфейс импорта
 
-До появления авторизации импорт доступен только через доменный Python-сервис и
-management-команду:
+Импорт пока доступен только через доменный Python-сервис и management-команду:
 
 ```text
 python manage.py import_artjournal_backup BACKUP.json \
@@ -176,8 +175,9 @@ python manage.py import_artjournal_backup BACKUP.json \
 `--dry-run` не создаёт даже `ImportBatch`. Обычный запуск сохраняет успешную
 или неуспешную партию и её отчёт, но при ошибке не оставляет предметных записей.
 
-Публичный DRF endpoint, JWT, роли, Celery и Android-синхронизация в этот этап
-не входят. Позднее они должны вызывать тот же импорт-сервис, не дублируя
+JWT, роли и API управления членствами реализованы отдельно. Публичный endpoint
+импорта, Celery и Android-синхронизация пока не входят в этот этап. Будущий
+авторизованный endpoint должен вызывать тот же импорт-сервис, не дублируя
 правила.
 
 ## Обязательные проверки
