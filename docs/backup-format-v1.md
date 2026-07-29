@@ -10,6 +10,10 @@ JSON v1 — переносимый снимок локальной Room-базы
 - [анонимизированный полный пример](examples/artjournal-backup-v1.example.json);
 - [правила преобразования в серверную модель](server-data-model.md).
 
+Backend содержит идентичную runtime-копию схемы в
+`backend/apps/imports/schemas/`; отдельный тест не позволяет двум копиям
+незаметно разойтись.
+
 ## Почему не CSV
 
 Существующий CSV:
@@ -105,6 +109,16 @@ backup, в котором часть таблиц снята до пользов
 
 До появления авторизации импорт вызывается только через management-команду и
 доменный сервис. Незащищённый HTTP endpoint не создаётся.
+
+Пример безопасного dry run через Docker Compose:
+
+```bash
+docker compose exec -T web python manage.py import_artjournal_backup \
+  /dev/stdin --school SCHOOL_UUID --dry-run < backup.json
+```
+
+После успешной проверки уберите `--dry-run`. В этом режиме предметные записи
+создаются одной транзакцией, а `ImportBatch` и отчёт сохраняются отдельно.
 
 ## Конфиденциальность
 

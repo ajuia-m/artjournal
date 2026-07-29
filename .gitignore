@@ -24,3 +24,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 backend/db.sqlite3
+
+# Local backups may contain student personal data
+/backups/
+*.artjournal-backup.json
