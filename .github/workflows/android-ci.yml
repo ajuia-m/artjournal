@@ -47,3 +47,13 @@ jobs:
 
       - name: Run checks and build debug APK
         run: ./gradlew --no-daemon clean testDebugUnitTest lintDebug assembleDebug
+
+      - name: Verify committed Room schema
+        shell: bash
+        run: |
+          git diff --exit-code -- app/schemas
+          if [[ -n "$(git status --porcelain --untracked-files=all -- app/schemas)" ]]; then
+            git status --short -- app/schemas
+            find app/schemas -type f -name "*.json" -print -exec sed -n "1,1200p" {} \;
+            exit 1
+          fi

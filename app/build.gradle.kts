@@ -49,6 +49,11 @@ android {
   testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 
+ksp {
+  arg("room.schemaLocation", "$projectDir/schemas")
+  arg("room.incremental", "true")
+}
+
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
 // to match the convention used in Web projects.
 secrets {

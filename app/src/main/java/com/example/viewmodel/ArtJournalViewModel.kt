@@ -5,17 +5,21 @@ import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.BuildConfig
 import com.example.data.*
+import com.example.data.backup.ArtJournalBackupExporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -23,6 +27,7 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
 
     private val db = ArtJournalDatabase.getDatabase(application)
     val repository = ArtJournalRepository(db.artJournalDao())
+    private val backupExporter = ArtJournalBackupExporter(db)
 
     // --- Active Selected Tabs/Filters UI State ---
     private val _currentTab = MutableStateFlow("journal") // "journal" | "themes" | "schedule" | "tracker" | "settings"
@@ -767,6 +772,41 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     // --- CSV IMPORTER / EXPORTER ---
+    fun exportFullBackup(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val json = backupExporter.exportToJson(
+                    appVersionName = BuildConfig.VERSION_NAME,
+                    appVersionCode = BuildConfig.VERSION_CODE
+                )
+                withContext(Dispatchers.IO) {
+                    val outputStream = getApplication<Application>()
+                        .contentResolver
+                        .openOutputStream(uri, "w")
+                        ?: error("Не удалось открыть выбранный файл")
+                    OutputStreamWriter(outputStream, Charsets.UTF_8).use { writer ->
+                        writer.write(json)
+                    }
+                }
+                logAction(
+                    "Экспорт JSON",
+                    "Создана полная резервная копия формата v1"
+                )
+                Toast.makeText(
+                    getApplication(),
+                    "Резервная копия сохранена",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } catch (exception: Exception) {
+                Toast.makeText(
+                    getApplication(),
+                    "Ошибка экспорта: ${exception.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
     fun exportToCSVString(): String {
         val s = StringBuilder()
         s.append("TYPE,ID,DATA1,DATA2,DATA3,DATA4,DATA5,DATA6,DATA7,DATA8\n")

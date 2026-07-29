@@ -218,6 +218,9 @@ export KEY_PASSWORD=your_key_password
 
 ## Экспорт данных
 
+- `ArtJournalBackupExporter` сохраняет все десять таблиц в
+  [версионированный JSON v1](docs/backup-format-v1.md) через системный выбор
+  файла;
 - `exportGroupJournalToPDF()` создает одностраничный PDF до 12 занятий и сохраняет его в `Downloads`.
 - `exportToCSVString()` сериализует данные в текст и помещает их в буфер обмена через экран настроек.
 - `importFromCSVString()` сейчас импортирует только `YEAR`, `GROUP` и `STUDENT`.

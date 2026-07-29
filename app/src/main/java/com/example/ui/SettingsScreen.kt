@@ -1,6 +1,8 @@
 package com.example.ui
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +37,13 @@ fun SettingsScreen(viewModel: ArtJournalViewModel) {
     var showClearWarning by remember { mutableStateOf(false) }
     var csvImportVal by remember { mutableStateOf("") }
     var showImportDialog by remember { mutableStateOf(false) }
+    val backupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportFullBackup(uri)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -107,12 +116,44 @@ fun SettingsScreen(viewModel: ArtJournalViewModel) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- SECTION 2: CSV IMPORTER & EXPORTER ---
+        // --- SECTION 2: VERSIONED JSON BACKUP ---
         ArtCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text("Резервное копирование (CSV)", color = PrimaryYellow, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(
+                    "Полная резервная копия (JSON v1)",
+                    color = PrimaryYellow,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Экспортируйте или импортируйте журнал в один текстовый CSV клипборд.", color = MutedGray, fontSize = 12.sp)
+                Text(
+                    "Сохраняет все таблицы и поля. Файл содержит персональные данные учеников — храните его в защищенном месте.",
+                    color = MutedGray,
+                    fontSize = 12.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ArtButton(
+                    text = "Сохранить JSON",
+                    onClick = {
+                        backupLauncher.launch(
+                            "artjournal-backup-${viewModel.getCurrentDateString()}.json"
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- SECTION 3: LEGACY CSV IMPORTER & EXPORTER ---
+        ArtCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text("Устаревший обмен (CSV)", color = PrimaryYellow, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("CSV сохраняет не все данные и оставлен только для совместимости.", color = MutedGray, fontSize = 12.sp)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -137,7 +178,7 @@ fun SettingsScreen(viewModel: ArtJournalViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- SECTION 3: AUDIT ACTION HISTORY LOG LOGS ---
+        // --- SECTION 4: AUDIT ACTION HISTORY LOG LOGS ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

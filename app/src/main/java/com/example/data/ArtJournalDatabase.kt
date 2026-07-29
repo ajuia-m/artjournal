@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
+const val ART_JOURNAL_DATABASE_VERSION = 2
+
 @Database(
     entities = [
         AcademicYear::class,
@@ -18,12 +20,13 @@ import androidx.room.RoomDatabase
         StudentTopicProgress::class,
         AuditLog::class
     ],
-    version = 2,
-    exportSchema = false
+    version = ART_JOURNAL_DATABASE_VERSION,
+    exportSchema = true
 )
 abstract class ArtJournalDatabase : RoomDatabase() {
 
     abstract fun artJournalDao(): ArtJournalDao
+    abstract fun artJournalBackupDao(): ArtJournalBackupDao
 
     companion object {
         @Volatile
@@ -36,7 +39,6 @@ abstract class ArtJournalDatabase : RoomDatabase() {
                     ArtJournalDatabase::class.java,
                     "art_journal_database"
                 )
-                .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
                 instance
