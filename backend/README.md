@@ -13,7 +13,9 @@
 - Docker Compose;
 - readiness endpoint `GET /api/v1/health/`;
 - Pytest и Ruff;
-- минимальный кастомный `User` и граница данных `School`;
+- кастомный `User`, JWT access/refresh tokens и отзыв refresh-токенов;
+- школы, членства с ролями `admin`/`teacher` и назначения преподавателей;
+- серверная матрица доступа с проверкой членства при каждом запросе;
 - нормализованная серверная модель учебной структуры, расписания, тем,
   занятий, прогресса и оплат;
 - UUID, внешние ключи, индексы, PostgreSQL constraints и начальные миграции;
@@ -21,14 +23,16 @@
 - транзакционный импорт, `--dry-run`, SHA-256 и идемпотентность по `exportId`;
 - изолированное хранение legacy-аудита и отчёты `ImportBatch`.
 
-Авторизация, роли, публичные предметные API и подключение Android намеренно не
-входят в этот этап. Наличие модели `User` не означает, что вход или выдача
-токенов уже доступны. Импорт доступен только через management-команду.
+Доступны API аутентификации, чтение доступных школ и управление членствами и
+назначениями преподавателей. Предметные API журнала, авторизация импорта и
+подключение Android пока не входят в этот этап. Импорт по-прежнему доступен
+только через management-команду.
 
 Модель описана в [целевой серверной модели](../docs/server-data-model.md):
 темы и критерии отделены от фактических занятий, а связь `LessonTopic`
 поддерживает несколько тем в одном занятии и несколько занятий для одной
-темы.
+темы. Матрица ролей и API описаны в
+[документе контроля доступа](../docs/access-control.md).
 
 ## Запуск через Docker Compose
 
@@ -95,6 +99,68 @@ python manage.py runserver
 
 Для подключения к PostgreSQL задайте `POSTGRES_HOST` и остальные переменные из
 корневого `.env.example`.
+
+## Пользователи, роли и JWT
+
+Сначала создайте суперпользователя:
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+Через `/admin/` создайте школу, пользователя и его первое активное членство с
+ролью `admin`. После bootstrap администратор школы может управлять членствами
+и назначениями через API.
+
+Получить пару токенов:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/token/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"your-password"}'
+```
+
+Access-токен живёт 15 минут, refresh-токен — 7 дней. При обновлении refresh
+ротируется, а использованный токен попадает в blacklist:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/token/refresh/ \
+  -H 'Content-Type: application/json' \
+  -d '{"refresh":"REFRESH_TOKEN"}'
+```
+
+Проверить пользователя и его активные членства:
+
+```bash
+curl http://localhost:8000/api/v1/auth/me/ \
+  -H 'Authorization: Bearer ACCESS_TOKEN'
+```
+
+Завершить сессию:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/token/logout/ \
+  -H 'Content-Type: application/json' \
+  -d '{"refresh":"REFRESH_TOKEN"}'
+```
+
+Роли не записываются в JWT. Сервер повторно читает активное членство и
+назначения из PostgreSQL при каждом защищённом запросе, поэтому деактивация или
+смена роли применяется немедленно и не ждёт истечения access-токена.
+
+Основные endpoints:
+
+| Метод и путь | Доступ |
+|---|---|
+| `GET /api/v1/schools/` | активные школы текущего пользователя |
+| `GET /api/v1/schools/{schoolId}/` | активный участник школы |
+| `GET/POST /api/v1/schools/{schoolId}/memberships/` | администратор школы |
+| `GET/PATCH/DELETE /api/v1/schools/{schoolId}/memberships/{id}/` | администратор школы |
+| `GET/POST /api/v1/schools/{schoolId}/teaching-assignments/` | администратор школы |
+| `GET/PUT/PATCH/DELETE /api/v1/schools/{schoolId}/teaching-assignments/{id}/` | администратор школы |
+
+В production обязательно задайте разные длинные случайные значения
+`DJANGO_SECRET_KEY` и `JWT_SIGNING_KEY`.
 
 ## Импорт Art Journal JSON v1
 
