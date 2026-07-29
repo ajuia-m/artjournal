@@ -1,0 +1,6 @@
+{
+  "name": "Художка Журнал",
+  "description": "Интерактивный журнал для художественной школы в глубоком черном цвете с желтыми акцентами",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
