@@ -9,7 +9,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+// Robolectric requires JDK 21 for SDK 36. Keep JVM tests on SDK 35 so the
+// project can use AGP's standard JDK 17 toolchain.
+@Config(sdk = [35])
 class ExampleRobolectricTest {
 
   @Test

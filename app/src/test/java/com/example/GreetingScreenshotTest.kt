@@ -14,7 +14,9 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
+// Robolectric requires JDK 21 for SDK 36. Keep JVM tests on SDK 35 so the
+// project can use AGP's standard JDK 17 toolchain.
+@Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [35])
 class GreetingScreenshotTest {
 
   @get:Rule val composeTestRule = createComposeRule()
