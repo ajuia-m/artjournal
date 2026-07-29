@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -26,6 +27,13 @@ class SchoolContextMixin:
         return self._school
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="school_list",
+        summary="List schools available to the current user",
+        tags=["Schools"],
+    )
+)
 class SchoolListView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = SchoolSerializer
@@ -41,6 +49,13 @@ class SchoolListView(generics.ListAPIView):
         ).distinct()
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="school_retrieve",
+        summary="Read an available school",
+        tags=["Schools"],
+    )
+)
 class SchoolDetailView(SchoolContextMixin, generics.RetrieveAPIView):
     permission_classes = (IsAuthenticated, HasSchoolAction)
     serializer_class = SchoolSerializer
@@ -48,6 +63,18 @@ class SchoolDetailView(SchoolContextMixin, generics.RetrieveAPIView):
     queryset = School.objects.all()
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="membership_list",
+        summary="List school memberships",
+        tags=["Memberships"],
+    ),
+    post=extend_schema(
+        operation_id="membership_create",
+        summary="Create a school membership",
+        tags=["Memberships"],
+    ),
+)
 class MembershipListCreateView(SchoolContextMixin, generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated, HasSchoolAction)
     required_school_action = SchoolAction.MANAGE_MEMBERS
@@ -63,6 +90,23 @@ class MembershipListCreateView(SchoolContextMixin, generics.ListCreateAPIView):
         return {**super().get_serializer_context(), "school": self.get_school()}
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="membership_retrieve",
+        summary="Read a school membership",
+        tags=["Memberships"],
+    ),
+    patch=extend_schema(
+        operation_id="membership_update",
+        summary="Change a membership role or active state",
+        tags=["Memberships"],
+    ),
+    delete=extend_schema(
+        operation_id="membership_delete",
+        summary="Delete a school membership",
+        tags=["Memberships"],
+    ),
+)
 class MembershipDetailView(
     SchoolContextMixin,
     generics.RetrieveUpdateDestroyAPIView,
@@ -89,6 +133,18 @@ class MembershipDetailView(
             raise ValidationError({"detail": error.messages}) from error
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="teaching_assignment_list",
+        summary="List teaching assignments",
+        tags=["Teaching assignments"],
+    ),
+    post=extend_schema(
+        operation_id="teaching_assignment_create",
+        summary="Create a teaching assignment",
+        tags=["Teaching assignments"],
+    ),
+)
 class TeachingAssignmentListCreateView(
     SchoolContextMixin,
     generics.ListCreateAPIView,
@@ -110,6 +166,28 @@ class TeachingAssignmentListCreateView(
         return {**super().get_serializer_context(), "school": self.get_school()}
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="teaching_assignment_retrieve",
+        summary="Read a teaching assignment",
+        tags=["Teaching assignments"],
+    ),
+    put=extend_schema(
+        operation_id="teaching_assignment_replace",
+        summary="Replace a teaching assignment",
+        tags=["Teaching assignments"],
+    ),
+    patch=extend_schema(
+        operation_id="teaching_assignment_update",
+        summary="Update a teaching assignment",
+        tags=["Teaching assignments"],
+    ),
+    delete=extend_schema(
+        operation_id="teaching_assignment_delete",
+        summary="Delete a teaching assignment",
+        tags=["Teaching assignments"],
+    ),
+)
 class TeachingAssignmentDetailView(
     SchoolContextMixin,
     generics.RetrieveUpdateDestroyAPIView,

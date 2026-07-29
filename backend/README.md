@@ -16,6 +16,7 @@
 - кастомный `User`, JWT access/refresh tokens и отзыв refresh-токенов;
 - школы, членства с ролями `admin`/`teacher` и назначения преподавателей;
 - серверная матрица доступа с проверкой членства при каждом запросе;
+- OpenAPI 3.0.3, публичная схема, Swagger UI и CI-валидация контракта;
 - нормализованная серверная модель учебной структуры, расписания, тем,
   занятий, прогресса и оплат;
 - UUID, внешние ключи, индексы, PostgreSQL constraints и начальные миграции;
@@ -32,7 +33,8 @@
 темы и критерии отделены от фактических занятий, а связь `LessonTopic`
 поддерживает несколько тем в одном занятии и несколько занятий для одной
 темы. Матрица ролей и API описаны в
-[документе контроля доступа](../docs/access-control.md).
+[документе контроля доступа](../docs/access-control.md), правила OpenAPI — в
+[документе API-контракта](../docs/openapi.md).
 
 ## Запуск через Docker Compose
 
@@ -158,6 +160,10 @@ curl -X POST http://localhost:8000/api/v1/auth/token/logout/ \
 | `GET/PATCH/DELETE /api/v1/schools/{schoolId}/memberships/{id}/` | администратор школы |
 | `GET/POST /api/v1/schools/{schoolId}/teaching-assignments/` | администратор школы |
 | `GET/PUT/PATCH/DELETE /api/v1/schools/{schoolId}/teaching-assignments/{id}/` | администратор школы |
+
+OpenAPI-схема доступна по `/api/v1/schema/`, интерактивный Swagger UI — по
+`/api/v1/docs/`. Оба endpoint публичны, но защищённые операции по-прежнему
+требуют Bearer JWT.
 
 В production обязательно задайте разные длинные случайные значения
 `DJANGO_SECRET_KEY` и `JWT_SIGNING_KEY`.

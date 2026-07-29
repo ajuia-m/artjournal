@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.models import User
@@ -57,6 +58,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "memberships",
         )
 
+    @extend_schema_field(MembershipSerializer(many=True))
     def get_memberships(self, user: User) -> list[dict[str, object]]:
         memberships = getattr(user, "active_school_memberships", ())
         return MembershipSerializer(memberships, many=True).data
