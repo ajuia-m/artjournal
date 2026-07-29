@@ -1,0 +1,546 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ajuia-m/artjournal/blob/main/docs/schemas/artjournal-backup-v1.schema.json",
+  "title": "Art Journal backup v1",
+  "type": "object",
+  "required": [
+    "format",
+    "formatVersion",
+    "exportId",
+    "exportedAtEpochMillis",
+    "source",
+    "data"
+  ],
+  "properties": {
+    "format": {
+      "const": "artjournal-backup"
+    },
+    "formatVersion": {
+      "const": 1
+    },
+    "exportId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "exportedAtEpochMillis": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "data": {
+      "$ref": "#/$defs/data"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "positiveId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "optionalDateString": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/date"
+        },
+        {
+          "const": ""
+        }
+      ]
+    },
+    "nullableDateString": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/date"
+        },
+        {
+          "const": ""
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "platform",
+        "appVersionName",
+        "appVersionCode",
+        "roomSchemaVersion"
+      ],
+      "properties": {
+        "platform": {
+          "const": "android"
+        },
+        "appVersionName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "appVersionCode": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "roomSchemaVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "academicYears",
+        "groups",
+        "students",
+        "payments",
+        "quarters",
+        "lessons",
+        "studentLessonStates",
+        "topics",
+        "studentTopicProgress",
+        "auditLogs"
+      ],
+      "properties": {
+        "academicYears": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/academicYear"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "students": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/student"
+          }
+        },
+        "payments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/payment"
+          }
+        },
+        "quarters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/quarter"
+          }
+        },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/lesson"
+          }
+        },
+        "studentLessonStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/studentLessonState"
+          }
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/topic"
+          }
+        },
+        "studentTopicProgress": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/studentTopicProgress"
+          }
+        },
+        "auditLogs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/auditLog"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "academicYear": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "holidays",
+        "isActive",
+        "quarterMarkers"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "holidays": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "quarterMarkers": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "group": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "academicYearId",
+        "disciplines",
+        "schedule"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "academicYearId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "disciplines": {
+          "type": "string"
+        },
+        "schedule": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "student": {
+      "type": "object",
+      "required": [
+        "id",
+        "lastName",
+        "firstName",
+        "birthday",
+        "enrollmentDate",
+        "contractNumber",
+        "groupId",
+        "status",
+        "customFields"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "birthday": {
+          "$ref": "#/$defs/optionalDateString"
+        },
+        "enrollmentDate": {
+          "$ref": "#/$defs/optionalDateString"
+        },
+        "paperPaymentDate": {
+          "$ref": "#/$defs/nullableDateString"
+        },
+        "paperPaymentAmount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "contractNumber": {
+          "type": "string"
+        },
+        "groupId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "archived",
+            "deleted"
+          ]
+        },
+        "archiveDate": {
+          "$ref": "#/$defs/nullableDateString"
+        },
+        "archiveReason": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "customFields": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "payment": {
+      "type": "object",
+      "required": [
+        "id",
+        "studentId",
+        "date",
+        "amount",
+        "comment"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "studentId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "date": {
+          "$ref": "#/$defs/date"
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "quarter": {
+      "type": "object",
+      "required": [
+        "id",
+        "academicYearId",
+        "name",
+        "startDate",
+        "endDate"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "academicYearId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startDate": {
+          "$ref": "#/$defs/date"
+        },
+        "endDate": {
+          "$ref": "#/$defs/date"
+        }
+      },
+      "additionalProperties": true
+    },
+    "lesson": {
+      "type": "object",
+      "required": [
+        "id",
+        "groupId",
+        "date",
+        "discipline",
+        "isNonSchoolDay"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "groupId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "date": {
+          "$ref": "#/$defs/date"
+        },
+        "discipline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "topicId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/positiveId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "customTopicName": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "isNonSchoolDay": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "studentLessonState": {
+      "type": "object",
+      "required": [
+        "id",
+        "studentId",
+        "lessonId",
+        "isPresent",
+        "isExcusedAbsence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "studentId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "lessonId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "grade": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 5
+        },
+        "isPresent": {
+          "type": "boolean"
+        },
+        "isExcusedAbsence": {
+          "type": "boolean"
+        },
+        "homeworkPoints": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 101
+        },
+        "comment": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "note": {
+          "$ref": "#/$defs/nullableString"
+        }
+      },
+      "additionalProperties": true
+    },
+    "topic": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "discipline",
+        "criteria",
+        "groupIds",
+        "quarterIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "discipline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "criteria": {
+          "type": "string"
+        },
+        "groupIds": {
+          "type": "string"
+        },
+        "quarterIds": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "studentTopicProgress": {
+      "type": "object",
+      "required": [
+        "id",
+        "studentId",
+        "topicId",
+        "stage",
+        "criteriaGrades"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "studentId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "topicId": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "stage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "criteriaGrades": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "auditLog": {
+      "type": "object",
+      "required": [
+        "id",
+        "timestamp",
+        "action",
+        "details"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/positiveId"
+        },
+        "timestamp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "type": "string"
+        },
+        "revertData": {
+          "$ref": "#/$defs/nullableString"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

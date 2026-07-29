@@ -1,0 +1,146 @@
+{
+  "format": "artjournal-backup",
+  "formatVersion": 1,
+  "exportId": "4bf57251-7b55-4e47-a34f-a69795e1306c",
+  "exportedAtEpochMillis": 1785300000000,
+  "source": {
+    "platform": "android",
+    "appVersionName": "1.0",
+    "appVersionCode": 1,
+    "roomSchemaVersion": 2
+  },
+  "data": {
+    "academicYears": [
+      {
+        "id": 1,
+        "name": "2026-2027",
+        "holidays": "2027-01-01",
+        "isActive": true,
+        "quarterMarkers": "2026-09-01,2026-11-01"
+      }
+    ],
+    "groups": [
+      {
+        "id": 1,
+        "name": "Демонстрационная группа",
+        "academicYearId": 1,
+        "disciplines": "Рисунок,Живопись",
+        "schedule": "1:Рисунок,3:Живопись"
+      }
+    ],
+    "students": [
+      {
+        "id": 1,
+        "lastName": "Пример",
+        "firstName": "Ученик",
+        "birthday": "2015-04-12",
+        "enrollmentDate": "2026-09-01",
+        "paperPaymentDate": "2026-09-02",
+        "paperPaymentAmount": 1500.5,
+        "contractNumber": "DEMO-001",
+        "groupId": 1,
+        "status": "active",
+        "customFields": "Источник::Анонимизированный пример"
+      }
+    ],
+    "payments": [
+      {
+        "id": 1,
+        "studentId": 1,
+        "date": "2026-09-05",
+        "amount": 3000.75,
+        "comment": "Демонстрационная запись"
+      }
+    ],
+    "quarters": [
+      {
+        "id": 1,
+        "academicYearId": 1,
+        "name": "I четверть",
+        "startDate": "2026-09-01",
+        "endDate": "2026-10-25"
+      }
+    ],
+    "lessons": [
+      {
+        "id": 1,
+        "groupId": 1,
+        "date": "2026-09-07",
+        "discipline": "Живопись",
+        "topicId": 1,
+        "customTopicName": null,
+        "isNonSchoolDay": false
+      },
+      {
+        "id": 2,
+        "groupId": 1,
+        "date": "2026-09-14",
+        "discipline": "Живопись",
+        "topicId": 1,
+        "customTopicName": null,
+        "isNonSchoolDay": false
+      },
+      {
+        "id": 3,
+        "groupId": 1,
+        "date": "2026-09-21",
+        "discipline": "Живопись",
+        "topicId": null,
+        "customTopicName": null,
+        "isNonSchoolDay": true
+      }
+    ],
+    "studentLessonStates": [
+      {
+        "id": 1,
+        "studentId": 1,
+        "lessonId": 1,
+        "grade": 5,
+        "isPresent": true,
+        "isExcusedAbsence": false,
+        "homeworkPoints": 90,
+        "comment": "Демонстрационная оценка",
+        "note": null
+      },
+      {
+        "id": 2,
+        "studentId": 1,
+        "lessonId": 2,
+        "grade": 4,
+        "isPresent": true,
+        "isExcusedAbsence": false,
+        "homeworkPoints": 85,
+        "comment": null,
+        "note": "Тема продолжена на втором занятии"
+      }
+    ],
+    "topics": [
+      {
+        "id": 1,
+        "name": "Натюрморт",
+        "discipline": "Живопись",
+        "criteria": "Композиция:10,Цвет:10",
+        "groupIds": "1",
+        "quarterIds": "1"
+      }
+    ],
+    "studentTopicProgress": [
+      {
+        "id": 1,
+        "studentId": 1,
+        "topicId": 1,
+        "stage": 75,
+        "criteriaGrades": "Композиция:8,Цвет:9"
+      }
+    ],
+    "auditLogs": [
+      {
+        "id": 1,
+        "timestamp": 1785300000000,
+        "action": "DEMO_DATA_CREATED",
+        "details": "Анонимизированная демонстрационная запись",
+        "revertData": null
+      }
+    ]
+  }
+}
