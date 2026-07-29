@@ -1,0 +1,102 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "compose.yaml"
+      - ".env.example"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "compose.yaml"
+      - ".env.example"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, test and check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: artjournal
+          POSTGRES_USER: artjournal
+          POSTGRES_PASSWORD: artjournal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U artjournal -d artjournal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      POSTGRES_DB: artjournal
+      POSTGRES_USER: artjournal
+      POSTGRES_PASSWORD: artjournal
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements/*.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements/dev.txt
+
+      - name: Run Ruff
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run Django checks
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: pytest
+
+      - name: Validate Docker Compose
+        working-directory: ${{ github.workspace }}
+        run: docker compose config
+
+      - name: Start backend stack
+        working-directory: ${{ github.workspace }}
+        run: docker compose up --detach --build --wait --wait-timeout 120
+
+      - name: Verify health endpoint
+        working-directory: ${{ github.workspace }}
+        run: curl --fail --silent --show-error http://localhost:8000/api/v1/health/
+
+      - name: Stop backend stack
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: docker compose down --volumes --remove-orphans
