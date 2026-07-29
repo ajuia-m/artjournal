@@ -13,6 +13,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.BuildConfig
 import com.example.data.*
 import com.example.data.backup.ArtJournalBackupExporter
+import com.example.domain.analytics.AnalyticsCalculator
+import com.example.domain.analytics.AnalyticsPeriod
+import com.example.domain.analytics.AnalyticsSnapshot
+import com.example.domain.analytics.AttendanceStats
+import com.example.domain.analytics.DisciplineScore
+import com.example.domain.analytics.StudentRiskEvaluator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -28,6 +34,8 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
     private val db = ArtJournalDatabase.getDatabase(application)
     val repository = ArtJournalRepository(db.artJournalDao())
     private val backupExporter = ArtJournalBackupExporter(db)
+    private val analyticsCalculator = AnalyticsCalculator()
+    private val studentRiskEvaluator = StudentRiskEvaluator()
 
     // --- Active Selected Tabs/Filters UI State ---
     private val _currentTab = MutableStateFlow("journal") // "journal" | "themes" | "schedule" | "tracker" | "settings"
@@ -60,6 +68,20 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
     val topics = repository.topics.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val studentTopicProgress = repository.studentTopicProgress.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val auditLogs = repository.auditLogs.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val analyticsSnapshot = combine(
+        lessons,
+        studentLessonStates,
+        topics,
+        studentTopicProgress
+    ) { lessonItems, lessonStateItems, topicItems, topicProgressItems ->
+        buildAnalyticsSnapshot(
+            lessons = lessonItems,
+            lessonStates = lessonStateItems,
+            topics = topicItems,
+            topicProgress = topicProgressItems
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, AnalyticsSnapshot.Empty)
 
     // Keep active Academic Year reference
     val activeYear = academicYears.map { list ->
@@ -682,93 +704,76 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
     }
 
 
-    // --- ADVANCED CALCULATIONS & LOGIC CHECKS ---
+    // --- ANALYTICS ---
 
-    // 1. Checks if student has 2 consecutive absences in group's calendar
-    fun isStudentConsecutiveAbsences(studentId: Int, groupId: Int): Boolean {
-        val groupLessons = lessons.value.filter { it.groupId == groupId && !it.isNonSchoolDay }.sortedBy { it.date }
-        if (groupLessons.size < 2) return false
-        val states = studentLessonStates.value
+    fun attendanceStats(
+        studentId: Int,
+        groupId: Int,
+        startDate: String,
+        endDate: String,
+        asOfDate: String = getCurrentDateString()
+    ): AttendanceStats = analyticsCalculator.attendance(
+        snapshot = analyticsSnapshot.value,
+        studentId = studentId,
+        groupId = groupId,
+        period = AnalyticsPeriod(startDate, endDate, asOfDate)
+    )
 
-        var consecutive = 0
-        // Parse states backwards in time in reverse chronological order
-        for (les in groupLessons.reversed()) {
-            val state = states.find { it.studentId == studentId && it.lessonId == les.id }
-            if (state != null && !state.isPresent) {
-                consecutive++
-                if (consecutive >= 2) return true
-            } else if (state != null && state.isPresent) {
-                // He was present, break loop
-                break
-            }
-        }
-        return false
-    }
+    fun homeworkPoints(
+        studentId: Int,
+        groupId: Int,
+        startDate: String,
+        endDate: String,
+        asOfDate: String = getCurrentDateString()
+    ): Int = analyticsCalculator.homeworkPoints(
+        snapshot = analyticsSnapshot.value,
+        studentId = studentId,
+        groupId = groupId,
+        period = AnalyticsPeriod(startDate, endDate, asOfDate)
+    )
 
-    // 2. Checks if student has NOT paid education fees for over a month (30 days)
-    // Educational pay is regular! Check difference between last payment date and today.
-    fun isStudentUnpaidOverMonth(studentId: Int): Boolean {
-        val studentPayments = payments.value.filter { it.studentId == studentId }.sortedBy { it.date }
-        val st = students.value.find { it.id == studentId } ?: return false
+    fun disciplineScore(
+        studentId: Int,
+        groupId: Int,
+        discipline: String,
+        startDate: String,
+        endDate: String,
+        asOfDate: String = getCurrentDateString()
+    ): DisciplineScore = analyticsCalculator.disciplineScore(
+        snapshot = analyticsSnapshot.value,
+        studentId = studentId,
+        groupId = groupId,
+        discipline = discipline,
+        period = AnalyticsPeriod(startDate, endDate, asOfDate)
+    )
 
-        val baseDateStr = if (studentPayments.isNotEmpty()) {
-            studentPayments.last().date
-        } else {
-            st.enrollmentDate.ifBlank { "2026-05-01" } // default date fallback
-        }
+    fun hasConsecutiveAbsences(
+        studentId: Int,
+        groupId: Int,
+        asOfDate: String = getCurrentDateString()
+    ): Boolean = studentRiskEvaluator.hasConsecutiveAbsences(
+        snapshot = analyticsSnapshot.value,
+        studentId = studentId,
+        groupId = groupId,
+        asOfDate = asOfDate
+    )
 
-        try {
-            val date = dateFormat.parse(baseDateStr) ?: return false
-            val diffMs = Date().time - date.time
-            val diffDays = diffMs / (1000 * 60 * 60 * 24)
-            return diffDays > 30
-        } catch (e: Exception) {
-            return false
-        }
-    }
+    fun hasStalePaymentRecord(
+        studentId: Int,
+        asOfDate: String = getCurrentDateString(),
+        staleAfterDays: Int = 30
+    ): Boolean {
+        val student = students.value.find { it.id == studentId } ?: return false
+        val paymentDates = payments.value
+            .filter { it.studentId == studentId }
+            .map { it.date }
 
-    // Tracker Scoring: Sum grades in period + Topic criteria points
-    fun calculateTrackerPoints(studentId: Int, discipline: String, start: String, end: String): Double {
-        // A. Sum of daily lesson grades (0..5)
-        val groupLessons = lessons.value.filter {
-            it.date in start..end && it.discipline.equals(discipline, ignoreCase = true) && !it.isNonSchoolDay
-        }
-        val lessonIds = groupLessons.map { it.id }
-        val dailyGradesSum = studentLessonStates.value.filter {
-            it.studentId == studentId && it.lessonId in lessonIds && it.grade != null
-        }.sumOf { it.grade ?: 0 }
-
-        // B. Sum of topic criteria points
-        val tps = topics.value.filter { it.discipline.equals(discipline, ignoreCase = true) }
-        val topicIds = tps.map { it.id }
-        val prog = studentTopicProgress.value.filter { it.studentId == studentId && it.topicId in topicIds }
-        var criteriaSum = 0
-        for (p in prog) {
-            criteriaSum += p.getGradesMap().values.sum()
-        }
-
-        return dailyGradesSum.toDouble() + criteriaSum
-    }
-
-    // Aggregate homework score for meta "Домашняя работа" calculation
-    fun calculateHomeworkPoints(studentId: Int, start: String, end: String): Double {
-        val groupLessons = lessons.value.filter { it.date in start..end }
-        val lessonIds = groupLessons.map { it.id }
-        return studentLessonStates.value.filter {
-            it.studentId == studentId && it.lessonId in lessonIds && it.homeworkPoints != null
-        }.sumOf { it.homeworkPoints ?: 0 }.toDouble()
-    }
-
-    // Attendance stats calculator
-    // Returns Pair(lessons attended, lessons total)
-    fun calculateAttendance(studentId: Int, start: String, end: String): Pair<Int, Int> {
-        val groupLessons = lessons.value.filter { it.date in start..end && !it.isNonSchoolDay }
-        val lessonIds = groupLessons.map { it.id }
-        val states = studentLessonStates.value.filter { it.studentId == studentId && it.lessonId in lessonIds }
-        val total = groupLessons.size
-        val missed = states.count { !it.isPresent }
-        val attended = total - missed
-        return Pair(attended, total)
+        return studentRiskEvaluator.paymentRecordSignal(
+            enrollmentDate = student.enrollmentDate,
+            paymentDates = paymentDates,
+            asOfDate = asOfDate,
+            staleAfterDays = staleAfterDays
+        ).isStale
     }
 
     // --- CSV IMPORTER / EXPORTER ---

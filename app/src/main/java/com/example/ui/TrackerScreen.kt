@@ -13,16 +13,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.*
+import com.example.domain.analytics.AttendanceStats
 import com.example.ui.theme.*
 import com.example.viewmodel.ArtJournalViewModel
+
+private data class StudentTrackerMetrics(
+    val student: Student,
+    val score: Double,
+    val attendance: AttendanceStats,
+    val lifetimeTopicPoints: Int
+)
 
 @Composable
 fun TrackerScreen(viewModel: ArtJournalViewModel) {
@@ -32,7 +37,7 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
     val groups by viewModel.groups.collectAsState()
     val quarters by viewModel.quarters.collectAsState()
     val students by viewModel.students.collectAsState()
-    val lessons by viewModel.lessons.collectAsState()
+    val analyticsSnapshot by viewModel.analyticsSnapshot.collectAsState()
 
     // Filter selections (3 groups of buttons)
     // 1. Period (Quarter / Year)
@@ -44,11 +49,28 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
     val currentGroupId = selectedGroupById ?: groups.firstOrNull()?.id
 
     val currentGroup = groups.find { it.id == currentGroupId }
-    val currentQuarter = quarters.find { it.id == selectedQuarterId }
+    LaunchedEffect(currentGroupId) {
+        selectedQuarterId = null
+        selectedTrackerDiscipline = "Все дисциплины"
+    }
+    val currentYearQuarters = quarters.filter {
+        it.academicYearId == currentGroup?.academicYearId
+    }
+    val currentQuarter = currentYearQuarters.find { it.id == selectedQuarterId }
+    val asOfDate = viewModel.getCurrentDateString()
+    val groupLessonDates = analyticsSnapshot.lessons
+        .filter { it.groupId == currentGroupId }
+        .map { it.date }
 
     // Date range boundaries for chosen period
-    val activeStartD = currentQuarter?.startDate ?: "2026-01-01"
-    val activeEndD = currentQuarter?.endDate ?: "2026-12-31"
+    val activeStartD = currentQuarter?.startDate
+        ?: currentYearQuarters.minOfOrNull { it.startDate }
+        ?: groupLessonDates.minOrNull()
+        ?: asOfDate
+    val activeEndD = currentQuarter?.endDate
+        ?: currentYearQuarters.maxOfOrNull { it.endDate }
+        ?: groupLessonDates.maxOrNull()
+        ?: asOfDate
     val pName = currentQuarter?.name ?: "Весь учебный год"
 
     // Gather active students
@@ -57,30 +79,82 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
     }
 
     // Prepare data points for chart drawing
-    val studentsWithScores = remember(groupStudents, selectedTrackerDiscipline, activeStartD, activeEndD, lessons) {
-        groupStudents.map { st ->
-            val finalScore = when (selectedTrackerDiscipline) {
-                "Домашняя работа" -> viewModel.calculateHomeworkPoints(st.id, activeStartD, activeEndD)
-                "Посещаемость" -> {
-                    val (attended, total) = viewModel.calculateAttendance(st.id, activeStartD, activeEndD)
-                    if (total > 0) (attended.toDouble() / total.toDouble() * 100.0) else 0.0
+    val studentsWithScores = remember(
+        groupStudents,
+        currentGroup,
+        currentGroupId,
+        selectedTrackerDiscipline,
+        activeStartD,
+        activeEndD,
+        asOfDate,
+        analyticsSnapshot
+    ) {
+        if (currentGroupId == null) {
+            emptyList()
+        } else {
+            groupStudents.map { student ->
+                val attendance = viewModel.attendanceStats(
+                    studentId = student.id,
+                    groupId = currentGroupId,
+                    startDate = activeStartD,
+                    endDate = activeEndD,
+                    asOfDate = asOfDate
+                )
+                var lifetimeTopicPoints = 0
+                val finalScore = when (selectedTrackerDiscipline) {
+                    "Домашняя работа" -> viewModel.homeworkPoints(
+                        studentId = student.id,
+                        groupId = currentGroupId,
+                        startDate = activeStartD,
+                        endDate = activeEndD,
+                        asOfDate = asOfDate
+                    ).toDouble()
+                    "Посещаемость" -> attendance.percentage
+                    "Все дисциплины" -> {
+                        val scores = currentGroup
+                            ?.getDisciplinesList()
+                            .orEmpty()
+                            .map { discipline ->
+                                viewModel.disciplineScore(
+                                    studentId = student.id,
+                                    groupId = currentGroupId,
+                                    discipline = discipline,
+                                    startDate = activeStartD,
+                                    endDate = activeEndD,
+                                    asOfDate = asOfDate
+                                )
+                            }
+                        lifetimeTopicPoints = scores.sumOf {
+                            it.lifetimeTopicCriteriaPoints
+                        }
+                        scores.sumOf { it.periodGradePoints }.toDouble()
+                    }
+                    else -> {
+                        val score = viewModel.disciplineScore(
+                            studentId = student.id,
+                            groupId = currentGroupId,
+                            discipline = selectedTrackerDiscipline,
+                            startDate = activeStartD,
+                            endDate = activeEndD,
+                            asOfDate = asOfDate
+                        )
+                        lifetimeTopicPoints = score.lifetimeTopicCriteriaPoints
+                        score.periodGradePoints.toDouble()
+                    }
                 }
-                "Все дисциплины" -> {
-                    // Sum overall disciplines
-                    val discList = currentGroup?.getDisciplinesList() ?: emptyList()
-                    discList.sumOf { d -> viewModel.calculateTrackerPoints(st.id, d, activeStartD, activeEndD) }
-                }
-                else -> {
-                    // Match selected single discipline
-                    viewModel.calculateTrackerPoints(st.id, selectedTrackerDiscipline, activeStartD, activeEndD)
-                }
+
+                StudentTrackerMetrics(
+                    student = student,
+                    score = finalScore,
+                    attendance = attendance,
+                    lifetimeTopicPoints = lifetimeTopicPoints
+                )
             }
-            st to finalScore
         }
     }
 
     val maxScore = remember(studentsWithScores) {
-        val maxVal = studentsWithScores.maxOfOrNull { it.second } ?: 1.0
+        val maxVal = studentsWithScores.maxOfOrNull { it.score } ?: 1.0
         if (maxVal > 0) maxVal else 1.0
     }
 
@@ -132,7 +206,7 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
                 Text("Весь год", color = if (selectedQuarterId == null) DeepBlack else PureWhite, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
 
-            quarters.filter { it.academicYearId == currentGroup?.academicYearId }.forEach { q ->
+            currentYearQuarters.forEach { q ->
                 val isSelected = q.id == selectedQuarterId
                 Box(
                     modifier = Modifier
@@ -211,6 +285,16 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
             Text("$pName · $selectedTrackerDiscipline", color = PrimaryYellow, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             Icon(Icons.Default.TrendingUp, tint = PrimaryYellow, contentDescription = null, modifier = Modifier.size(16.dp))
         }
+        if (selectedTrackerDiscipline != "Домашняя работа" &&
+            selectedTrackerDiscipline != "Посещаемость"
+        ) {
+            Text(
+                "Итог — оценки за период; критерии тем показаны отдельно за всё время",
+                color = MutedGray,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -235,12 +319,12 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
                             Spacer(modifier = Modifier.height(12.dp))
 
                             // Draw horizontal comparison bar for each student
-                            studentsWithScores.forEach { (student, score) ->
-                                val fraction = (score / maxScore).toFloat().coerceIn(0f, 1f)
+                            studentsWithScores.forEach { metrics ->
+                                val fraction = (metrics.score / maxScore).toFloat().coerceIn(0f, 1f)
                                 val displayValueStr = if (selectedTrackerDiscipline == "Посещаемость") {
-                                    "${score.toInt()}%"
+                                    "${metrics.score.toInt()}%"
                                 } else {
-                                    "${score.toInt()} б."
+                                    "${metrics.score.toInt()} б."
                                 }
 
                                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -248,7 +332,7 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(student.fullName, color = PureWhite, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                        Text(metrics.student.fullName, color = PureWhite, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                         Text(displayValueStr, color = PrimaryYellow, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -274,10 +358,7 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
                 }
 
                 // --- DETAILED NUMERICAL VALUES LIST ---
-                items(studentsWithScores) { (st, score) ->
-                    val (att, tot) = viewModel.calculateAttendance(st.id, activeStartD, activeEndD)
-                    val attendancePercent = if (tot > 0) (att * 100 / tot) else 0
-
+                items(studentsWithScores) { metrics ->
                     ArtCard(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -285,11 +366,29 @@ fun TrackerScreen(viewModel: ArtJournalViewModel) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(st.fullName, color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Посещаемость за четверть: $att/$tot ($attendancePercent%)", color = MutedGray, fontSize = 11.sp)
+                                Text(metrics.student.fullName, color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(
+                                    "Посещаемость: ${metrics.attendance.present}/${metrics.attendance.marked} " +
+                                        "(${metrics.attendance.percentage.toInt()}%) · " +
+                                        "не отмечено: ${metrics.attendance.unmarked}",
+                                    color = MutedGray,
+                                    fontSize = 11.sp
+                                )
+                                if (metrics.lifetimeTopicPoints > 0) {
+                                    Text(
+                                        "Критерии тем за всё время: ${metrics.lifetimeTopicPoints} б.",
+                                        color = MutedGray,
+                                        fontSize = 11.sp
+                                    )
+                                }
                             }
 
-                            val scoreBubbleVal = if (selectedTrackerDiscipline == "Посещаемость") "$attendancePercent%" else "${score.toInt()} б."
+                            val scoreBubbleVal =
+                                if (selectedTrackerDiscipline == "Посещаемость") {
+                                    "${metrics.attendance.percentage.toInt()}%"
+                                } else {
+                                    "${metrics.score.toInt()} б."
+                                }
                             Box(
                                 modifier = Modifier
                                     .background(DarkCard, RoundedCornerShape(8.dp))

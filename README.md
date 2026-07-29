@@ -35,6 +35,7 @@
 ```mermaid
 flowchart TD
     UI["Compose UI — 5 экранов"] -->|действие пользователя| VM["ArtJournalViewModel"]
+    VM -->|снимок данных| Analytics["Domain analytics"]
     VM -->|корутина| Repository["ArtJournalRepository"]
     Repository --> DAO["ArtJournalDao"]
     DAO --> DB["Room / SQLite"]
@@ -51,6 +52,11 @@ flowchart TD
 5. Репозиторий делегирует операцию Room DAO.
 6. Room обновляет соответствующий `Flow`, после чего Compose перерисовывает затронутый интерфейс.
 
+Расчёты посещаемости, успеваемости и предупреждающих сигналов находятся в
+чистом Kotlin-модуле `domain/analytics`. ViewModel преобразует Room-сущности в
+неизменяемый снимок и передаёт ему явные `groupId`, период и дату среза
+`asOfDate`, поэтому правила можно тестировать без Android и базы данных.
+
 DI-фреймворк не используется: база и репозиторий создаются непосредственно внутри ViewModel.
 
 ## Архитектурные слои
@@ -58,7 +64,8 @@ DI-фреймворк не используется: база и репозит�
 | Слой | Файлы | Ответственность |
 | --- | --- | --- |
 | UI | `ui/*.kt`, `MainActivity.kt` | Compose-разметка, диалоги, фильтры и ввод пользователя |
-| State / business logic | `ArtJournalViewModel.kt` | UI-состояние, проверки, расчеты, экспорт, журналирование действий |
+| State / application logic | `ArtJournalViewModel.kt` | UI-состояние, оркестрация операций, экспорт и журналирование действий |
+| Domain analytics | `domain/analytics/*.kt` | Детерминированные расчёты и правила предупреждающих сигналов |
 | Repository | `ArtJournalRepository.kt` | Тонкая абстракция над DAO |
 | Persistence | `ArtJournalDao.kt`, `ArtJournalDatabase.kt` | Room-запросы и локальная SQLite-база |
 | Model | `Entities.kt` | 10 Room-сущностей и преобразование строковых полей |
@@ -128,6 +135,7 @@ artjournal/
 │       │   ├── java/com/example/
 │       │   │   ├── MainActivity.kt
 │       │   │   ├── data/
+│       │   │   ├── domain/analytics/
 │       │   │   ├── ui/
 │       │   │   └── viewmodel/
 │       │   └── res/
@@ -161,7 +169,8 @@ cd artjournal
 Откройте корневую папку `artjournal`, выберите JDK 17 как Gradle JDK и установите Android SDK 36.1, если IDE предложит это сделать.
 
 > [!IMPORTANT]
-> В репозитории пока нет Gradle Wrapper: отсутствуют `gradlew`, `gradlew.bat` и `gradle-wrapper.jar`. Android Studio потребуется настроить совместимую локальную или загруженную Gradle distribution. Команды `./gradlew ...` не заработают до добавления wrapper-файлов.
+> Используйте Gradle Wrapper из репозитория. Он фиксирует Gradle `9.3.1`, а
+> `distributionSha256Sum` проверяет целостность загруженного дистрибутива.
 
 ### 3. Создать debug-keystore
 
@@ -192,7 +201,7 @@ export STORE_PASSWORD=your_store_password
 export KEY_PASSWORD=your_key_password
 ```
 
-Затем запустите release-сборку из Android Studio. После добавления Gradle Wrapper эквивалентной командой будет:
+Затем запустите release-сборку из Android Studio или командой:
 
 ```bash
 ./gradlew assembleRelease
@@ -202,19 +211,24 @@ export KEY_PASSWORD=your_key_password
 
 В репозитории находятся:
 
+- `AnalyticsCalculatorTest` — посещаемость, домашняя работа и баллы по дисциплинам;
+- `StudentRiskEvaluatorTest` — серии пропусков и платёжная эвристика;
+- `AnalyticsSnapshotMapperTest` — преобразование Room-сущностей в domain-снимок;
+- `ArtJournalBackupCodecTest` и `ArtJournalBackupExporterTest` — формат и полнота JSON-экспорта;
 - `ExampleUnitTest` — базовая проверка JUnit;
 - `ExampleRobolectricTest` — ресурс приложения и запуск `MainActivity`;
 - `GreetingScreenshotTest` — пример Roborazzi screenshot-теста;
 - `ExampleInstrumentedTest` — Android instrumented test.
 
-Через Android Studio тесты можно запускать из контекстного меню класса или каталога. После добавления Gradle Wrapper:
+Через Android Studio тесты можно запускать из контекстного меню класса или каталога. Из терминала:
 
 ```bash
 ./gradlew testDebugUnitTest
 ./gradlew connectedDebugAndroidTest
 ```
 
-Тесты пока являются инфраструктурными примерами и не покрывают основную бизнес-логику.
+Ключевые правила аналитики и резервного копирования покрыты unit-тестами.
+Остальная бизнес-логика экранов и операций с журналом пока покрыта частично.
 
 ## Экспорт данных
 
