@@ -28,6 +28,7 @@ import java.util.*
 @Composable
 fun JournalScreen(viewModel: ArtJournalViewModel) {
     val context = LocalContext.current
+    val asOfDate = viewModel.getCurrentDateString()
 
     // Observe DB States
     val groups by viewModel.groups.collectAsState()
@@ -290,9 +291,16 @@ fun JournalScreen(viewModel: ArtJournalViewModel) {
                         // Student items vertical scrolling
                         LazyColumn(modifier = Modifier.weight(1f)) {
                             items(groupStudents) { student ->
-                                // Compute Warnings (consecutive absences/delinquent monthly payment)
-                                val hasAbsenceWarning = viewModel.isStudentConsecutiveAbsences(student.id, currentGroupId)
-                                val hasPaymentWarning = viewModel.isStudentUnpaidOverMonth(student.id)
+                                // Signals are deterministic for the same snapshot and reference date.
+                                val hasAbsenceWarning = viewModel.hasConsecutiveAbsences(
+                                    studentId = student.id,
+                                    groupId = currentGroupId,
+                                    asOfDate = asOfDate
+                                )
+                                val hasPaymentWarning = viewModel.hasStalePaymentRecord(
+                                    studentId = student.id,
+                                    asOfDate = asOfDate
+                                )
 
                                 val bgColor = when {
                                     hasAbsenceWarning -> DarkRedBg
