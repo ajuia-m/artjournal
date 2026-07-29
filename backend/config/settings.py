@@ -32,8 +32,13 @@ INSTALLED_APPS = [
     "rest_framework",
     "apps.core",
     "apps.accounts",
+    "apps.schools",
+    "apps.education",
+    "apps.curriculum",
     "apps.journal",
+    "apps.tuition",
     "apps.imports",
+    "apps.audit",
 ]
 
 MIDDLEWARE = [
@@ -109,6 +114,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "accounts.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
