@@ -12,8 +12,8 @@ class ArtJournalBackupExporter(
     private val codec: ArtJournalBackupCodec = ArtJournalBackupCodec(),
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
     private val exportIdFactory: () -> String = { UUID.randomUUID().toString() }
-) {
-    suspend fun exportToJson(
+) : BackupExporter {
+    override suspend fun exportToJson(
         appVersionName: String,
         appVersionCode: Int
     ): String {

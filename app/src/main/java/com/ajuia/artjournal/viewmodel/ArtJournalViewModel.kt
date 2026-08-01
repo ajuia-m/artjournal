@@ -12,7 +12,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajuia.artjournal.BuildConfig
 import com.ajuia.artjournal.data.*
-import com.ajuia.artjournal.data.backup.ArtJournalBackupExporter
+import com.ajuia.artjournal.data.backup.BackupExporter
 import com.ajuia.artjournal.domain.analytics.AnalyticsCalculator
 import com.ajuia.artjournal.domain.analytics.AnalyticsPeriod
 import com.ajuia.artjournal.domain.analytics.AnalyticsSnapshot
@@ -29,11 +29,11 @@ import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ArtJournalViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = ArtJournalDatabase.getDatabase(application)
-    val repository = ArtJournalRepository(db.artJournalDao())
-    private val backupExporter = ArtJournalBackupExporter(db)
+class ArtJournalViewModel(
+    application: Application,
+    private val repository: LocalJournalRepository,
+    private val backupExporter: BackupExporter
+) : AndroidViewModel(application) {
     private val analyticsCalculator = AnalyticsCalculator()
     private val studentRiskEvaluator = StudentRiskEvaluator()
 
@@ -596,6 +596,20 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun deleteQuarter(quarter: Quarter) {
+        viewModelScope.launch {
+            repository.deleteQuarter(quarter)
+            logAction("Удаление четверти", "Удален период \"${quarter.name}\"")
+        }
+    }
+
+    fun updateAcademicYearHolidays(year: AcademicYear, holidays: String) {
+        viewModelScope.launch {
+            repository.updateAcademicYear(year.copy(holidays = holidays))
+            logAction("Обновление праздников", "Обновлен список нерабочих праздничных дней")
+        }
+    }
+
     fun saveAcademicYear(name: String, active: Boolean = true, copyPreviousYearData: Boolean = false) {
         viewModelScope.launch {
             val previousActiveId = activeYear.value?.id
@@ -990,9 +1004,7 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
     fun loadTestData() {
         viewModelScope.launch {
             // Clear existing tables
-            withContext(Dispatchers.IO) {
-                db.clearAllTables()
-            }
+            repository.clearAllData()
 
             // 1. Core Academic Year
             val yearId = repository.insertAcademicYear(
@@ -1094,9 +1106,7 @@ class ArtJournalViewModel(application: Application) : AndroidViewModel(applicati
 
     fun clearAllData() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                db.clearAllTables()
-            }
+            repository.clearAllData()
             _selectedGroupId.value = null
             logAction("Сброс базы", "Все таблицы базы данных очищены")
             Toast.makeText(getApplication(), "Все данные удалены!", Toast.LENGTH_SHORT).show()

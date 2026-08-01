@@ -22,6 +22,18 @@ class ExampleRobolectricTest {
   }
 
   @Test
+  fun `application exposes one stable dependency container`() {
+    val application = ApplicationProvider.getApplicationContext<ArtJournalApplication>()
+
+    assertSame(application.container, application.container)
+    assertSame(
+      application.container.localJournalRepository,
+      application.container.localJournalRepository
+    )
+    assertSame(application.container.backupExporter, application.container.backupExporter)
+  }
+
+  @Test
   fun `test main activity launch`() {
     androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use { scenario ->
       scenario.onActivity { activity ->
