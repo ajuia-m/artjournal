@@ -230,17 +230,26 @@ export KEY_PASSWORD=your_key_password
 - `ExampleUnitTest` — базовая проверка JUnit;
 - `ExampleRobolectricTest` — ресурс приложения и запуск `MainActivity`;
 - `GreetingScreenshotTest` — пример Roborazzi screenshot-теста;
-- `ExampleInstrumentedTest` — Android instrumented test.
+- `JournalComposeUiTest` — запуск `MainActivity` на эмуляторе, переходы между
+  основными разделами, загрузка демо-данных и проверка журнала.
 
 Через Android Studio тесты можно запускать из контекстного меню класса или каталога. Из терминала:
 
 ```bash
 ./gradlew testDebugUnitTest
 ./gradlew connectedDebugAndroidTest
+./gradlew pixel2api30DebugAndroidTest \
+  -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
 ```
 
+Последняя команда создаёт чистый Gradle Managed Device `Pixel 2` с API 30,
+запускает Compose UI-тест и затем удаляет эмулятор. Тот же сценарий выполняется
+в отдельной задаче Android CI; HTML-отчёт сохраняется в GitHub Actions на 14
+дней.
+
 Ключевые правила аналитики и резервного копирования покрыты unit-тестами.
-Остальная бизнес-логика экранов и операций с журналом пока покрыта частично.
+Compose UI пока покрывает один критический сквозной сценарий; операции создания
+ученика, занятия и оценки остаются следующими кандидатами.
 
 ## Экспорт данных
 
