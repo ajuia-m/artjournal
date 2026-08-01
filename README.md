@@ -27,6 +27,12 @@ Django/DRF и PostgreSQL. Он содержит нормализованную �
 оценок. Android-приложение к нему пока не подключено: Room остаётся источником
 данных мобильного прототипа.
 
+Первое подключение Android будет server-authoritative и online-first. Локальный
+Room-режим не смешивается с серверной школой, а полный offline sync откладывается
+до появления версий записей, tombstone и идемпотентных клиентских команд. Это
+решение и порядок миграции описаны в
+[ADR-0002](docs/adr/0002-android-server-integration.md).
+
 ## Что реализовано
 
 | Экран | Компонент | Назначение |
@@ -100,6 +106,7 @@ DI-фреймворк не используется: база и репозит�
 
 - [текущая модель данных Room v2](docs/data-model-current.md);
 - [ADR-0001: переход к backend на Django/DRF и PostgreSQL](docs/adr/0001-server-backed-architecture.md);
+- [ADR-0002: подключение Android к server-backed режиму](docs/adr/0002-android-server-integration.md);
 - [целевая серверная модель и контракт импорта](docs/server-data-model.md);
 - [JWT, роли и серверная матрица доступа](docs/access-control.md);
 - [OpenAPI-контракт и правила документирования endpoints](docs/openapi.md);
