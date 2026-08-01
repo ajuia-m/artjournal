@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "rest_framework_simplejwt.token_blacklist",
     "apps.core",
     "apps.accounts",
@@ -122,6 +123,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
@@ -131,6 +133,38 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth": "10/minute",
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Art Journal API",
+    "DESCRIPTION": (
+        "Server API for schools, memberships and the Art Journal domain. "
+        "All identifiers are UUIDs and protected operations use Bearer JWT."
+    ),
+    "VERSION": "1.0.0",
+    "OAS_VERSION": "3.0.3",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": True,
+    "SWAGGER_UI_SETTINGS": {
+        "displayRequestDuration": True,
+        "persistAuthorization": False,
+    },
+    "TAGS": [
+        {"name": "Authentication", "description": "JWT session lifecycle."},
+        {"name": "Schools", "description": "Schools visible to the current user."},
+        {
+            "name": "Memberships",
+            "description": "School membership and role administration.",
+        },
+        {
+            "name": "Teaching assignments",
+            "description": "Teacher access to groups and subjects.",
+        },
+        {"name": "System", "description": "Service readiness."},
+    ],
 }
 
 SIMPLE_JWT = {

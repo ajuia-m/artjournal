@@ -101,6 +101,7 @@ DI-фреймворк не используется: база и репозит�
 - [ADR-0001: переход к backend на Django/DRF и PostgreSQL](docs/adr/0001-server-backed-architecture.md);
 - [целевая серверная модель и контракт импорта](docs/server-data-model.md);
 - [JWT, роли и серверная матрица доступа](docs/access-control.md);
+- [OpenAPI-контракт и правила документирования endpoints](docs/openapi.md);
 - [формат резервной копии JSON v1](docs/backup-format-v1.md).
 
 ## Стек
