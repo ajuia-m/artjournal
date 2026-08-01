@@ -119,14 +119,14 @@ DI-фреймворк не используется: база и репозит�
 | Robolectric | `4.16.1` | Android-тесты на JVM |
 | Roborazzi | `1.59.0` | Screenshot-тест |
 
-Retrofit, Moshi и OkHttp подключены как зависимости, но текущая реализация не создает сетевой клиент и не обращается к API. `.env.example` содержит заготовку `GEMINI_API_KEY`, однако AI-функции в коде не реализованы.
+Retrofit, Moshi и OkHttp подключены как основа будущей интеграции Android-клиента с Django API, но текущая реализация ещё не создаёт сетевой клиент и не обращается к серверу. Неиспользуемая шаблонная конфигурация генеративного API удалена.
 
 ## Параметры Android
 
 | Параметр | Значение |
 | --- | --- |
-| Application ID | `com.aistudio.artschooljournal.kwxptz` |
-| Namespace | `com.example` |
+| Application ID | `com.ajuia.artjournal` |
+| Namespace | `com.ajuia.artjournal` |
 | Minimum SDK | API 24 / Android 7.0 |
 | Target SDK | API 36 |
 | Compile SDK | Android 36.1 |
@@ -143,7 +143,7 @@ artjournal/
 │   └── src/
 │       ├── main/
 │       │   ├── AndroidManifest.xml
-│       │   ├── java/com/example/
+│       │   ├── java/com/ajuia/artjournal/
 │       │   │   ├── MainActivity.kt
 │       │   │   ├── data/
 │       │   │   ├── domain/analytics/
@@ -154,8 +154,7 @@ artjournal/
 │       └── androidTest/
 ├── gradle/libs.versions.toml
 ├── build.gradle.kts
-├── settings.gradle.kts
-└── metadata.json
+└── settings.gradle.kts
 ```
 
 ## Как запустить
