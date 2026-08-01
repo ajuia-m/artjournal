@@ -34,11 +34,13 @@ Django/DRF и PostgreSQL. Он содержит нормализованную �
 оценок. Android-приложение к нему пока не подключено: Room остаётся источником
 данных мобильного прототипа.
 
-Первое подключение Android будет server-authoritative и online-first. Локальный
-Room-режим не смешивается с серверной школой, а полный offline sync откладывается
-до появления версий записей, tombstone и идемпотентных клиентских команд. Это
-решение и порядок миграции описаны в
-[ADR-0002](docs/adr/0002-android-server-integration.md).
+Первое подключение Android будет server-authoritative, но позволит изменять
+поддерживаемые данные без сети. Room хранит рабочую копию и транзакционный
+outbox, а WorkManager отправляет операции после восстановления соединения.
+Сервер дедуплицирует команды, проверяет версию записи и возвращает явный
+конфликт вместо скрытого last-write-wins. Стратегия подключения и sync-протокол
+зафиксированы в [ADR-0002](docs/adr/0002-android-server-integration.md) и
+[ADR-0003](docs/adr/0003-offline-write-synchronization.md).
 
 ## Что реализовано
 
@@ -96,17 +98,25 @@ Room-режим не смешивается с серверной школой, 
 
 ### 3. Подключение Android к backend
 
-- ✅ ADR-0002: server-authoritative online-first режим без скрытого смешивания
-  Room и PostgreSQL.
+- ✅ ADR-0002: PostgreSQL остаётся серверным источником истины, а локальный и
+  серверный режимы не смешиваются.
+- ✅ ADR-0003: зафиксирован протокол offline-записей через Room outbox,
+  идемпотентные команды, версии, tombstone и change feed.
 - ✅ Локальные зависимости вынесены в composition root; Room явно ограничен
   режимом `Local legacy`.
-- ○ Создать Retrofit/Moshi API client, DTO, mapper и единый тип сетевых ошибок.
+- ○ Создать Retrofit/Moshi API client, sync DTO, mapper и единый тип сетевых ошибок.
 - ○ Реализовать вход, безопасное хранение refresh token, обновление access token
   и logout.
 - ○ Загружать доступные школы и явно выбирать рабочую школу.
+- ○ Добавить стабильные UUID, Room-таблицы outbox/sync metadata/conflicts и
+  миграционные тесты.
+- ○ Реализовать на backend версии записей, журнал команд, tombstone/change feed
+  и school-scoped sync endpoint.
 - ○ Подключить server-backed чтение групп, учеников, занятий и состояний.
-- ○ Подключить online-first создание занятия, посещаемость, оценки, домашнюю
-  работу и прогресс по темам.
+- ○ Подключить локальное создание и изменение занятия, посещаемости, оценки,
+  домашней работы и прогресса с атомарной записью операции в outbox.
+- ○ Запускать отправку outbox через WorkManager и показывать статусы
+  `pending`/`syncing`/`conflict`/`rejected` в интерфейсе.
 - ○ Реализовать контролируемый перенос JSON v1 из `Local legacy` в
   `Server workspace` без повторного смешивания данных.
 - ○ Добавить сквозной тест Android → JWT → Django API → PostgreSQL → повторное
@@ -137,9 +147,10 @@ Room-режим не смешивается с серверной школой, 
 - ○ Перенести пункты roadmap в GitHub Issues и milestone после стабилизации
   состава ближайшего релиза.
 
-Ближайший критический путь: **API прогресса и критериев → Android API client и
-JWT-сессия → выбор школы → server-backed журнал → защищённый импорт → сквозной
-тест → публичная демоверсия**.
+Ближайший критический путь: **API прогресса и критериев → sync contract и
+серверный command log → Android API client, JWT и выбор школы → Room outbox и
+WorkManager → server-backed журнал → защищённый импорт → offline/online
+сквозной тест → публичная демоверсия**.
 
 ## Как работает приложение
 
@@ -207,6 +218,7 @@ DI-фреймворк не используется. `ArtJournalApplication` с�
 - [текущая модель данных Room v2](docs/data-model-current.md);
 - [ADR-0001: переход к backend на Django/DRF и PostgreSQL](docs/adr/0001-server-backed-architecture.md);
 - [ADR-0002: подключение Android к server-backed режиму](docs/adr/0002-android-server-integration.md);
+- [ADR-0003: offline-записи и протокол синхронизации](docs/adr/0003-offline-write-synchronization.md);
 - [целевая серверная модель и контракт импорта](docs/server-data-model.md);
 - [JWT, роли и серверная матрица доступа](docs/access-control.md);
 - [OpenAPI-контракт и правила документирования endpoints](docs/openapi.md);
