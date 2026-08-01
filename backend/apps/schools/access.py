@@ -117,3 +117,21 @@ def accessible_group_ids(user: Any, school: School) -> set[Any]:
     if membership.role == Membership.Role.TEACHER:
         return set(membership.teaching_assignments.values_list("group_id", flat=True))
     return set()
+
+
+def accessible_subject_ids(user: Any, group: Any) -> set[Any]:
+    if not _is_authenticated_active(user):
+        return set()
+    school = group.academic_year.school
+    membership = active_membership(user, school)
+    if getattr(user, "is_superuser", False) or (
+        membership is not None and membership.role == Membership.Role.ADMIN
+    ):
+        return set(school.subjects.values_list("id", flat=True))
+    if membership is None or membership.role != Membership.Role.TEACHER:
+        return set()
+
+    assignments = membership.teaching_assignments.filter(group=group)
+    if assignments.filter(subject__isnull=True).exists():
+        return set(school.subjects.values_list("id", flat=True))
+    return set(assignments.values_list("subject_id", flat=True))

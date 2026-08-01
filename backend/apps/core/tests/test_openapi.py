@@ -9,6 +9,10 @@ EXPECTED_PATHS = {
     "/api/v1/auth/token/logout/",
     "/api/v1/auth/token/refresh/",
     "/api/v1/health/",
+    "/api/v1/schools/{school_id}/groups/{group_id}/lessons/",
+    "/api/v1/schools/{school_id}/groups/{group_id}/lessons/{lesson_id}/",
+    "/api/v1/schools/{school_id}/groups/{group_id}/lessons/{lesson_id}/states/",
+    ("/api/v1/schools/{school_id}/groups/{group_id}/lessons/{lesson_id}/states/{state_id}/"),
     "/api/v1/schools/",
     "/api/v1/schools/{school_id}/",
     "/api/v1/schools/{school_id}/memberships/",
@@ -29,6 +33,13 @@ def test_openapi_schema_is_public_and_complete() -> None:
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
+    }
+    assert "ApiError" in schema["components"]["schemas"]
+    lesson_create = schema["paths"]["/api/v1/schools/{school_id}/groups/{group_id}/lessons/"][
+        "post"
+    ]
+    assert lesson_create["responses"]["400"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ApiError"
     }
     assert schema["paths"]["/api/v1/health/"]["get"].get("security", []) == []
     assert schema["paths"]["/api/v1/auth/me/"]["get"]["security"] == [{"jwtAuth": []}]

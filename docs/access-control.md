@@ -1,9 +1,8 @@
 # JWT, роли и серверная матрица доступа
 
 Документ фиксирует первый рабочий контур аутентификации и авторизации Art
-Journal. Его граница — пользователи, школы, членства и назначения
-преподавателей. Предметные endpoints журнала будут подключать те же policy
-functions и DRF permissions по мере появления.
+Journal. Его граница — пользователи, школы, членства, назначения
+преподавателей и основной API занятий.
 
 ## Модель доступа
 
@@ -82,9 +81,16 @@ API использует `djangorestframework-simplejwt`:
 | `GET/PATCH/DELETE /api/v1/schools/{schoolId}/memberships/{id}/` | изменение членства |
 | `GET/POST /api/v1/schools/{schoolId}/teaching-assignments/` | список/создание назначений |
 | `GET/PUT/PATCH/DELETE /api/v1/schools/{schoolId}/teaching-assignments/{id}/` | изменение назначения |
+| `GET/POST /api/v1/schools/{schoolId}/groups/{groupId}/lessons/` | доступные занятия группы |
+| `GET/PATCH/DELETE .../lessons/{lessonId}/` | занятие и его темы |
+| `GET/POST .../lessons/{lessonId}/states/` | состояния учеников |
+| `GET/PATCH/DELETE .../states/{stateId}/` | посещаемость, оценки и заметки |
 
 Endpoints членств и назначений доступны только `admin` соответствующей школы.
 Объект из другой школы не может быть получен через вложенный URL.
+Journal endpoints используют `HasGroupAction`: безопасные методы требуют
+`VIEW_GROUP`, изменяющие — `EDIT_JOURNAL`. Для преподавателя дополнительно
+проверяется дисциплина занятия, а список фильтруется на сервере.
 
 ## Инвариант последнего администратора
 
@@ -123,6 +129,5 @@ Policy layer находится в `apps.schools.access` и не зависит 
 - Встроенный DRF throttle использует текущий cache backend. Для нескольких
   экземпляров приложения нужен общий Redis и дополнительный rate limit на
   reverse proxy/API gateway.
-- Предметные CRUD endpoints ещё не созданы, поэтому групповые policy functions
-  пока проверяются unit-тестами и предназначены для следующих вертикальных
-  срезов.
+- API прогресса по зачётным темам и критериям ещё не создан; текущий journal
+  API покрывает занятия и `StudentLessonState`.
