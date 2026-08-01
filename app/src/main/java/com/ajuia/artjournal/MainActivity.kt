@@ -28,14 +28,22 @@ import androidx.lifecycle.ViewModelProvider
 import com.ajuia.artjournal.ui.*
 import com.ajuia.artjournal.ui.theme.*
 import com.ajuia.artjournal.viewmodel.ArtJournalViewModel
+import com.ajuia.artjournal.viewmodel.ArtJournalViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Construct our unified view model instance
-        val viewModel = ViewModelProvider(this)[ArtJournalViewModel::class.java]
+        val app = application as ArtJournalApplication
+        val viewModel = ViewModelProvider(
+            this,
+            ArtJournalViewModelFactory(
+                application = app,
+                repository = app.container.localJournalRepository,
+                backupExporter = app.container.backupExporter
+            )
+        )[ArtJournalViewModel::class.java]
 
         setContent {
             MyApplicationTheme {

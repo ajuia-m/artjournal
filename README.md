@@ -51,7 +51,7 @@ Room-режим не смешивается с серверной школой, 
 flowchart TD
     UI["Compose UI — 5 экранов"] -->|действие пользователя| VM["ArtJournalViewModel"]
     VM -->|снимок данных| Analytics["Domain analytics"]
-    VM -->|корутина| Repository["ArtJournalRepository"]
+    VM -->|корутина| Repository["LocalJournalRepository"]
     Repository --> DAO["ArtJournalDao"]
     DAO --> DB["Room / SQLite"]
     DB -. Flow .-> DAO
@@ -72,7 +72,10 @@ flowchart TD
 неизменяемый снимок и передаёт ему явные `groupId`, период и дату среза
 `asOfDate`, поэтому правила можно тестировать без Android и базы данных.
 
-DI-фреймворк не используется: база и репозиторий создаются непосредственно внутри ViewModel.
+DI-фреймворк не используется. `ArtJournalApplication` создаёт ручной
+`AppContainer`, а `ArtJournalViewModelFactory` передаёт ViewModel интерфейс
+локального репозитория и экспортёр резервной копии. UI больше не обращается к
+репозиторию напрямую.
 
 ## Архитектурные слои
 
@@ -81,7 +84,8 @@ DI-фреймворк не используется: база и репозит�
 | UI | `ui/*.kt`, `MainActivity.kt` | Compose-разметка, диалоги, фильтры и ввод пользователя |
 | State / application logic | `ArtJournalViewModel.kt` | UI-состояние, оркестрация операций, экспорт и журналирование действий |
 | Domain analytics | `domain/analytics/*.kt` | Детерминированные расчёты и правила предупреждающих сигналов |
-| Repository | `ArtJournalRepository.kt` | Тонкая абстракция над DAO |
+| Composition root | `ArtJournalApplication.kt`, `AppContainer.kt` | Создание локальных зависимостей вне UI и ViewModel |
+| Repository | `LocalJournalRepository.kt` | Интерфейс legacy-хранилища и Room-реализация над DAO |
 | Persistence | `ArtJournalDao.kt`, `ArtJournalDatabase.kt` | Room-запросы и локальная SQLite-база |
 | Model | `Entities.kt` | 10 Room-сущностей и преобразование строковых полей |
 
@@ -153,6 +157,8 @@ artjournal/
 │       ├── main/
 │       │   ├── AndroidManifest.xml
 │       │   ├── java/com/ajuia/artjournal/
+│       │   │   ├── ArtJournalApplication.kt
+│       │   │   ├── AppContainer.kt
 │       │   │   ├── MainActivity.kt
 │       │   │   ├── data/
 │       │   │   ├── domain/analytics/

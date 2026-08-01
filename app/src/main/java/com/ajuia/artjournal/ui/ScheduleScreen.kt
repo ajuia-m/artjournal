@@ -19,13 +19,11 @@ import androidx.compose.ui.unit.sp
 import com.ajuia.artjournal.data.*
 import com.ajuia.artjournal.ui.theme.*
 import com.ajuia.artjournal.viewmodel.ArtJournalViewModel
-import kotlinx.coroutines.launch
 import java.util.*
 
 @Composable
 fun ScheduleScreen(viewModel: ArtJournalViewModel) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     // Observe DB States
     val academicYears by viewModel.academicYears.collectAsState()
@@ -196,7 +194,7 @@ fun ScheduleScreen(viewModel: ArtJournalViewModel) {
                                 IconButton(onClick = { editingQuarter = q }) {
                                     Icon(Icons.Default.Edit, tint = PrimaryYellow, contentDescription = "Редактировать четверть", modifier = Modifier.size(18.dp))
                                 }
-                                IconButton(onClick = { coroutineScope.launch { viewModel.repository.deleteQuarter(q) } }) {
+                                IconButton(onClick = { viewModel.deleteQuarter(q) }) {
                                     Icon(Icons.Default.DeleteForever, tint = SoftRed, contentDescription = "Удалить четверть", modifier = Modifier.size(18.dp))
                                 }
                             }
@@ -597,11 +595,8 @@ fun ScheduleScreen(viewModel: ArtJournalViewModel) {
             },
             confirmButton = {
                 ArtButton(text = "Сохранить", onClick = {
-                    coroutineScope.launch {
-                        viewModel.repository.updateAcademicYear(activeYear!!.copy(holidays = holidaysCVS.trim()))
-                        viewModel.logAction("Обновление праздников", "Обновлен список нерабочих праздничных дней")
-                        showHolidayDialog = false
-                    }
+                    viewModel.updateAcademicYearHolidays(activeYear!!, holidaysCVS.trim())
+                    showHolidayDialog = false
                 })
             },
             dismissButton = {

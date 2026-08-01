@@ -1,6 +1,8 @@
 # Текущая модель данных Art Journal
 
-> Снимок состояния `main` на коммите `a8b821e1cc0ced51d935b7865e777e3e94027bf0` от 29 июля 2026 года.
+> Исходный снимок модели зафиксирован 29 июля 2026 года. Ссылки и сведения о
+> конфигурации Room актуализированы 1 августа 2026 года; сама legacy-модель
+> сущностей не нормализовалась.
 
 Этот документ описывает фактическую локальную модель приложения до появления backend. Он нужен как контрольная точка для проектирования API, нормализации схемы и переноса пользовательских данных. Это не целевая схема PostgreSQL.
 
@@ -11,19 +13,20 @@
 - единственный источник истины — локальная база Room/SQLite на устройстве;
 - имя базы — `art_journal_database`;
 - версия схемы — `2`;
-- схема Room не экспортируется (`exportSchema = false`);
-- миграции не описаны: `fallbackToDestructiveMigration()` разрешает удалить и пересоздать базу при несовместимом обновлении;
+- схема Room v2 экспортируется в `app/schemas` и проверяется CI;
+- явные переходы со старых версий пока не описаны; destructive fallback удалён,
+  поэтому следующий bump версии обязан сначала добавить и протестировать migration;
 - все идентификаторы — локальные автоинкрементные `Int`;
 - пользователей, ролей, школы/организации и владельца данных в модели нет;
 - Repository в основном передаёт операции в DAO, а правила предметной области сосредоточены в `ArtJournalViewModel`.
 
 Основные источники:
 
-- [Entities.kt](../app/src/main/java/com/example/data/Entities.kt);
-- [ArtJournalDao.kt](../app/src/main/java/com/example/data/ArtJournalDao.kt);
-- [ArtJournalDatabase.kt](../app/src/main/java/com/example/data/ArtJournalDatabase.kt);
-- [ArtJournalRepository.kt](../app/src/main/java/com/example/data/ArtJournalRepository.kt);
-- [ArtJournalViewModel.kt](../app/src/main/java/com/example/viewmodel/ArtJournalViewModel.kt).
+- [Entities.kt](../app/src/main/java/com/ajuia/artjournal/data/Entities.kt);
+- [ArtJournalDao.kt](../app/src/main/java/com/ajuia/artjournal/data/ArtJournalDao.kt);
+- [ArtJournalDatabase.kt](../app/src/main/java/com/ajuia/artjournal/data/ArtJournalDatabase.kt);
+- [LocalJournalRepository.kt](../app/src/main/java/com/ajuia/artjournal/data/LocalJournalRepository.kt);
+- [ArtJournalViewModel.kt](../app/src/main/java/com/ajuia/artjournal/viewmodel/ArtJournalViewModel.kt).
 
 ## Логическая схема
 
