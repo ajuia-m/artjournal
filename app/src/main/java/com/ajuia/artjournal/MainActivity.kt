@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,30 +98,35 @@ fun ArtBottomBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             BottomBarItem(
+                testTag = "journal",
                 label = "Журнал",
                 icon = Icons.Default.Book,
                 isSelected = currentTab == "journal",
                 onClick = { onTabSelected("journal") }
             )
             BottomBarItem(
+                testTag = "themes",
                 label = "Темы",
                 icon = Icons.Default.Assignment,
                 isSelected = currentTab == "themes",
                 onClick = { onTabSelected("themes") }
             )
             BottomBarItem(
+                testTag = "schedule",
                 label = "Календарь",
                 icon = Icons.Default.CalendarMonth,
                 isSelected = currentTab == "schedule",
                 onClick = { onTabSelected("schedule") }
             )
             BottomBarItem(
+                testTag = "tracker",
                 label = "Аналитика",
                 icon = Icons.Default.TrendingUp,
                 isSelected = currentTab == "tracker",
                 onClick = { onTabSelected("tracker") }
             )
             BottomBarItem(
+                testTag = "settings",
                 label = "Настройки",
                 icon = Icons.Default.Settings,
                 isSelected = currentTab == "settings",
@@ -132,6 +138,7 @@ fun ArtBottomBar(
 
 @Composable
 fun RowScope.BottomBarItem(
+    testTag: String,
     label: String,
     icon: ImageVector,
     isSelected: Boolean,
@@ -140,6 +147,7 @@ fun RowScope.BottomBarItem(
     Column(
         modifier = Modifier
             .weight(1f)
+            .testTag("bottom-nav-$testTag")
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

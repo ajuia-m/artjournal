@@ -45,7 +45,18 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests { isIncludeAndroidResources = true }
+    managedDevices {
+      localDevices {
+        create("pixel2api30") {
+          device = "Pixel 2"
+          apiLevel = 30
+          systemImageSource = "aosp-atd"
+        }
+      }
+    }
+  }
 }
 
 ksp {
