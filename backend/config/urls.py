@@ -11,6 +11,10 @@ urlpatterns = [
         name="api-docs",
     ),
     path("api/v1/auth/", include("apps.accounts.urls")),
+    path(
+        "api/v1/schools/<uuid:school_id>/groups/<uuid:group_id>/",
+        include("apps.journal.urls"),
+    ),
     path("api/v1/schools/", include("apps.schools.urls")),
     path("api/v1/", include("apps.core.urls")),
 ]

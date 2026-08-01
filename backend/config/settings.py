@@ -124,6 +124,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "apps.core.exceptions.artjournal_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
@@ -163,6 +164,10 @@ SPECTACULAR_SETTINGS = {
             "name": "Teaching assignments",
             "description": "Teacher access to groups and subjects.",
         },
+        {
+            "name": "Journal",
+            "description": "Lessons, attendance, grades and teacher notes.",
+        },
         {"name": "System", "description": "Service readiness."},
     ],
 }
@@ -176,5 +181,8 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
-    "SIGNING_KEY": os.getenv("JWT_SIGNING_KEY", SECRET_KEY),
+    "SIGNING_KEY": os.getenv(
+        "JWT_SIGNING_KEY",
+        "development-only-jwt-signing-key-change-me",
+    ),
 }
