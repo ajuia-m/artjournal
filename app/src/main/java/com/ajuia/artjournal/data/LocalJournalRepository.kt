@@ -1,6 +1,8 @@
 package com.ajuia.artjournal.data
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 /**
  * Boundary around the current Room-backed, local-only journal.
@@ -54,11 +56,14 @@ interface LocalJournalRepository {
     suspend fun deleteStudentTopicProgress(progress: StudentTopicProgress)
     suspend fun deleteAuditLogById(id: Int)
     suspend fun deleteAuditLogsOlderThan(cutoff: Long)
+    suspend fun clearAllData()
 }
 
 class RoomLocalJournalRepository(
-    private val dao: ArtJournalDao
+    private val database: ArtJournalDatabase
 ) : LocalJournalRepository {
+    private val dao = database.artJournalDao()
+
     override val academicYears: Flow<List<AcademicYear>> = dao.getAcademicYears()
     override val groups: Flow<List<Group>> = dao.getGroups()
     override val students: Flow<List<Student>> = dao.getStudents()
@@ -108,4 +113,10 @@ class RoomLocalJournalRepository(
     override suspend fun deleteStudentTopicProgress(progress: StudentTopicProgress) = dao.deleteStudentTopicProgress(progress)
     override suspend fun deleteAuditLogById(id: Int) = dao.deleteAuditLogById(id)
     override suspend fun deleteAuditLogsOlderThan(cutoff: Long) = dao.deleteAuditLogsOlderThan(cutoff)
+
+    override suspend fun clearAllData() {
+        withContext(Dispatchers.IO) {
+            database.clearAllTables()
+        }
+    }
 }

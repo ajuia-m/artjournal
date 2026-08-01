@@ -1004,9 +1004,7 @@ class ArtJournalViewModel(
     fun loadTestData() {
         viewModelScope.launch {
             // Clear existing tables
-            withContext(Dispatchers.IO) {
-                db.clearAllTables()
-            }
+            repository.clearAllData()
 
             // 1. Core Academic Year
             val yearId = repository.insertAcademicYear(
@@ -1108,9 +1106,7 @@ class ArtJournalViewModel(
 
     fun clearAllData() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                db.clearAllTables()
-            }
+            repository.clearAllData()
             _selectedGroupId.value = null
             logAction("Сброс базы", "Все таблицы базы данных очищены")
             Toast.makeText(getApplication(), "Все данные удалены!", Toast.LENGTH_SHORT).show()

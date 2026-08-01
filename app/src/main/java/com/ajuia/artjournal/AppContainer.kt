@@ -18,7 +18,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val localJournalRepository: LocalJournalRepository by lazy {
-        RoomLocalJournalRepository(database.artJournalDao())
+        RoomLocalJournalRepository(database)
     }
 
     override val backupExporter: BackupExporter by lazy {
