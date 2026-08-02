@@ -106,6 +106,7 @@ class StudentLessonState(TimeStampedModel):
     homework_points = models.SmallIntegerField(null=True, blank=True)
     comment = models.TextField(blank=True)
     note = models.TextField(blank=True)
+    version = models.PositiveBigIntegerField(default=1)
 
     class Meta:
         ordering = ["lesson", "student", "id"]

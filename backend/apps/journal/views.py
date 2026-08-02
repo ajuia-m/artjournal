@@ -14,6 +14,7 @@ from apps.journal.serializers import (
     LessonSerializer,
     StudentLessonStateSerializer,
 )
+from apps.journal.services import delete_student_lesson_state
 from apps.schools.access import GroupAction, accessible_subject_ids
 from apps.schools.permissions import HasGroupAction
 
@@ -239,3 +240,6 @@ class StudentLessonStateDetailView(
         if getattr(self, "swagger_fake_view", False):
             return super().get_serializer_context()
         return {**super().get_serializer_context(), "lesson": self.get_lesson()}
+
+    def perform_destroy(self, instance):
+        delete_student_lesson_state(instance=instance, actor=self.request.user)
