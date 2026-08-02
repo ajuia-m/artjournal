@@ -5,6 +5,20 @@
 - Область: Android Room, WorkManager, Django/DRF, PostgreSQL и transport contract
 - Уточняет раздел 5 [ADR-0002](0002-android-server-integration.md)
 
+## Статус реализации в `main`
+
+- ✅ Django app `sync`, `SyncClient`, `SyncCommand`, `ChangeEvent`, версии
+  `StudentLessonState`, JSON Schema v1 и runtime-валидация;
+- ✅ `POST .../sync/commands/` и `GET .../sync/changes/` с проверкой школы,
+  назначений, идемпотентности, `baseVersion`, tombstone и cursor;
+- ✅ единый транзакционный write path для REST и sync API;
+- ○ snapshot endpoint, retention/compaction и `cursor_expired`;
+- ○ синхронизация занятий, прогресса и критериев;
+- ○ Android UUID-модель, Room replica/outbox, JWT-клиент, WorkManager и conflict UI.
+
+Таким образом, ADR принят целиком как направление, но в коде завершён только
+первый backend vertical slice.
+
 ## Контекст
 
 Преподаватель может отмечать посещаемость и оценки в помещении с нестабильной
@@ -120,7 +134,7 @@ Android использует school-scoped endpoints:
 ```text
 POST /api/v1/schools/{schoolId}/sync/commands/
 GET  /api/v1/schools/{schoolId}/sync/changes/?cursor=...
-GET  /api/v1/schools/{schoolId}/sync/snapshot/
+GET  /api/v1/schools/{schoolId}/sync/snapshot/  # planned, not implemented
 ```
 
 `POST commands` принимает ограниченную пачку, например не более 100 операций и
@@ -140,8 +154,10 @@ HTTP-ошибка описывает отказ всей пачки, напри�
 
 `GET changes` возвращает события строго после cursor и новый cursor. Cursor
 основан на серверной последовательности, а не на часах устройства. После
-истечения срока хранения change feed клиент получает `cursor_expired` и заново
-строит подтверждённую реплику через snapshot, не удаляя локальный outbox.
+будущего введения срока хранения change feed клиент должен получать
+`cursor_expired` и заново строить подтверждённую реплику через snapshot, не
+удаляя локальный outbox. Retention, `cursor_expired` и snapshot пока не
+реализованы.
 
 ### 6. Android sync engine
 
@@ -203,6 +219,9 @@ bundle либо подтвердить необратимое удаление.
 
 ### Android/Kotlin
 
+Статус раздела: **не реализовано**, кроме уже существующей границы
+`LocalJournalRepository` и ручного `AppContainer`.
+
 1. Ввести domain-модели с UUID отдельно от legacy Room entities.
 2. Добавить Room migration и таблицы outbox, metadata и conflicts.
 3. Создать `SyncJournalRepository`; локальную проекцию и outbox менять через
@@ -214,6 +233,10 @@ bundle либо подтвердить необратимое удаление.
 8. Не отправлять команды непосредственно из ViewModel или Compose.
 
 ### Django/DRF/PostgreSQL
+
+Статус раздела: пункты 1–4 и command/change endpoints из пункта 5 реализованы
+для `StudentLessonState`. Snapshot, rate limit и retention из пунктов 5–6
+остаются следующими задачами.
 
 1. Добавить app `sync`, модели `SyncClient`, `SyncCommand`, `ChangeEvent` и
    constraints идемпотентности.

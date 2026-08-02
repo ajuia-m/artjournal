@@ -1,5 +1,7 @@
 # Art Journal backend
 
+**[Main project overview](../README.md) · [Русский обзор проекта](../README.ru.md)**
+
 Серверный фундамент Art Journal. Он запускается отдельно от Android-приложения
 и умеет безопасно импортировать локальную резервную копию, но Android пока не
 читает и не изменяет серверные данные.
@@ -264,7 +266,11 @@ ruff check .
 ruff format --check .
 python manage.py check
 python manage.py makemigrations --check --dry-run
+python manage.py spectacular \
+  --file /tmp/artjournal-openapi.yaml \
+  --validate --fail-on-warn
 pytest
 ```
 
-Эти же проверки выполняет отдельный workflow `Backend CI`.
+`Backend CI` выполняет эти проверки с PostgreSQL 17, валидирует Docker Compose,
+запускает полный стек и проверяет database-backed health endpoint.

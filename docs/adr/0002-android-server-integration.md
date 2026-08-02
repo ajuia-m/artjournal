@@ -6,6 +6,18 @@
 - Заменяет уточнения об Android cache из ADR-0001 там, где этот документ задаёт более узкие правила первого клиентского релиза
 - Поведение offline-записей из раздела 5 уточнено в [ADR-0003](0003-offline-write-synchronization.md)
 
+## Статус реализации в `main`
+
+- ✅ ручной `AppContainer`, repository boundary и изолированный режим
+  `Local legacy`;
+- ✅ backend JWT, школы, роли, journal API и первый sync slice;
+- ○ Android API/JWT client, выбор школы и `Server workspace`;
+- ○ UUID Room replica, transactional outbox, WorkManager и conflict UI;
+- ○ защищённая миграция JSON v1 через HTTP и сквозной тест.
+
+Android и backend пока работают независимо; переключение workspace ещё не
+доступно пользователю.
+
 ## Контекст
 
 В репозитории существуют две рабочие, но пока не соединённые системы:
