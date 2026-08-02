@@ -19,6 +19,8 @@ EXPECTED_PATHS = {
     "/api/v1/schools/{school_id}/memberships/{membership_id}/",
     "/api/v1/schools/{school_id}/teaching-assignments/",
     "/api/v1/schools/{school_id}/teaching-assignments/{assignment_id}/",
+    "/api/v1/schools/{school_id}/sync/changes/",
+    "/api/v1/schools/{school_id}/sync/commands/",
 }
 
 

@@ -6,6 +6,10 @@ from rest_framework import serializers
 from apps.curriculum.models import GroupSubject, Subject, Topic, TopicGroupAssignment
 from apps.education.models import Enrollment, Student
 from apps.journal.models import Lesson, LessonTopic, StudentLessonState
+from apps.journal.services import (
+    create_student_lesson_state,
+    update_student_lesson_state,
+)
 
 
 def _raise_drf_validation_error(error: DjangoValidationError) -> None:
@@ -188,10 +192,11 @@ class StudentLessonStateSerializer(serializers.ModelSerializer):
             "homework_points",
             "comment",
             "note",
+            "version",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "version", "created_at", "updated_at")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -253,7 +258,19 @@ class StudentLessonStateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        return StudentLessonState.objects.create(
+        request = self.context.get("request")
+        return create_student_lesson_state(
             lesson=self.context["lesson"],
-            **validated_data,
+            validated_data=validated_data,
+            actor=self.context.get("actor", getattr(request, "user", None)),
+            entity_id=self.context.get("entity_id"),
+        )
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        return update_student_lesson_state(
+            instance=instance,
+            validated_data=validated_data,
+            actor=self.context.get("actor", getattr(request, "user", None)),
+            expected_version=self.context.get("expected_version"),
         )

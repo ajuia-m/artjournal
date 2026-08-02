@@ -65,3 +65,11 @@ DRF-ошибки нормализуются глобальным exception handl
 Journal endpoints ссылаются на компонент `ApiError` для ответов `400`, `401`,
 `403` и `404`. Необработанные серверные ошибки не преобразуются в публичные
 подробности и остаются стандартными ответами `500` инфраструктуры.
+
+## Sync contract
+
+OpenAPI описывает transport endpoints `/sync/commands/` и `/sync/changes/`, а
+JSON Schema `backend/apps/sync/schemas/sync-protocol-v1.schema.json` фиксирует
+канонический offline-command envelope. Эти контракты дополняют друг друга:
+OpenAPI задаёт HTTP request/response, JSON Schema используется для проверки
+совместимости будущих Kotlin DTO и Python serializers.

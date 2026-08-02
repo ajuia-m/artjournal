@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.tuition",
     "apps.imports",
     "apps.audit",
+    "apps.sync",
 ]
 
 MIDDLEWARE = [
@@ -167,6 +168,10 @@ SPECTACULAR_SETTINGS = {
         {
             "name": "Journal",
             "description": "Lessons, attendance, grades and teacher notes.",
+        },
+        {
+            "name": "Synchronization",
+            "description": "Idempotent offline commands and cursor-based change feed.",
         },
         {"name": "System", "description": "Service readiness."},
     ],
