@@ -3,7 +3,6 @@ package com.ajuia.artjournal.data.sync
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.ArrayDeque
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -13,8 +12,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class ServerJournalReplicaRepositoryTest {
     private lateinit var database: ServerJournalDatabase
     private lateinit var repository: ServerJournalReplicaRepository
