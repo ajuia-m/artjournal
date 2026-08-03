@@ -12,6 +12,7 @@ data class ApiClients internal constructor(
     val authenticationApi: AuthenticationApi,
     val accountApi: AccountApi,
     val schoolsApi: SchoolsApi,
+    val syncApi: SyncApi,
     internal val tokenManager: SessionTokenManager
 )
 
@@ -58,6 +59,7 @@ object ApiClientFactory {
             authenticationApi = authenticationApi,
             accountApi = authenticatedRetrofit.create(AccountApi::class.java),
             schoolsApi = authenticatedRetrofit.create(SchoolsApi::class.java),
+            syncApi = authenticatedRetrofit.create(SyncApi::class.java),
             tokenManager = tokenManager
         )
     }
