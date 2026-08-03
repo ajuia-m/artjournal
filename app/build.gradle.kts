@@ -8,6 +8,8 @@ plugins {
 val artJournalApiBaseUrl = providers.gradleProperty("ARTJOURNAL_API_BASE_URL")
   .orElse(providers.environmentVariable("ARTJOURNAL_API_BASE_URL"))
   .orElse("http://10.0.2.2:8000/")
+val artJournalE2eEnabled = providers.gradleProperty("ARTJOURNAL_E2E_ENABLED")
+  .orElse("false")
 
 android {
   namespace = "com.ajuia.artjournal"
@@ -25,6 +27,7 @@ android {
       "ARTJOURNAL_API_BASE_URL",
       "\"${artJournalApiBaseUrl.get().replace("\\", "\\\\").replace("\"", "\\\"")}\""
     )
+    buildConfigField("boolean", "ARTJOURNAL_E2E_ENABLED", artJournalE2eEnabled.get())
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
