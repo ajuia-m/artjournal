@@ -11,12 +11,15 @@ import com.ajuia.artjournal.data.session.AndroidSessionStore
 import com.ajuia.artjournal.data.session.ServerSessionRepository
 import com.ajuia.artjournal.data.session.SharedPreferencesWorkspacePreferences
 import com.ajuia.artjournal.data.session.WorkspacePreferences
+import com.ajuia.artjournal.data.sync.ServerJournalDatabase
+import com.ajuia.artjournal.data.sync.ServerJournalReplicaRepository
 
 interface AppContainer {
     val localJournalRepository: LocalJournalRepository
     val backupExporter: BackupExporter
     val serverSessionRepository: ServerSessionRepository
     val workspacePreferences: WorkspacePreferences
+    val serverJournalReplicaRepository: ServerJournalReplicaRepository
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -25,6 +28,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
         ArtJournalDatabase.getDatabase(applicationContext)
     }
     private val sessionStore by lazy { AndroidSessionStore(applicationContext) }
+    private val serverDatabase by lazy { ServerJournalDatabase.getDatabase(applicationContext) }
     private val apiClients by lazy {
         ApiClientFactory.create(
             baseUrl = BuildConfig.ARTJOURNAL_API_BASE_URL,
@@ -53,5 +57,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val workspacePreferences: WorkspacePreferences by lazy {
         SharedPreferencesWorkspacePreferences(applicationContext)
+    }
+
+    override val serverJournalReplicaRepository: ServerJournalReplicaRepository by lazy {
+        ServerJournalReplicaRepository(serverDatabase)
     }
 }

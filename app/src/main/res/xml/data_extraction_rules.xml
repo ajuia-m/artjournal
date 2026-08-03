@@ -6,8 +6,14 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="server_session_secure.xml" />
+        <exclude domain="database" path="art_journal_server.db" />
+        <exclude domain="database" path="art_journal_server.db-shm" />
+        <exclude domain="database" path="art_journal_server.db-wal" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="server_session_secure.xml" />
+        <exclude domain="database" path="art_journal_server.db" />
+        <exclude domain="database" path="art_journal_server.db-shm" />
+        <exclude domain="database" path="art_journal_server.db-wal" />
     </device-transfer>
 </data-extraction-rules>

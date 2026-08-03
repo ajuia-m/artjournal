@@ -4,6 +4,8 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface AuthenticationApi {
     @POST("api/v1/auth/token/")
@@ -24,4 +26,19 @@ interface AccountApi {
 interface SchoolsApi {
     @GET("api/v1/schools/")
     suspend fun schools(): List<SchoolDto>
+}
+
+interface SyncApi {
+    @POST("api/v1/schools/{schoolId}/sync/commands/")
+    suspend fun submitCommands(
+        @Path("schoolId") schoolId: String,
+        @Body batch: SyncCommandBatchDto
+    ): SyncCommandBatchResponseDto
+
+    @GET("api/v1/schools/{schoolId}/sync/changes/")
+    suspend fun changes(
+        @Path("schoolId") schoolId: String,
+        @Query("cursor") cursor: String,
+        @Query("limit") limit: Int = 100
+    ): ChangeFeedResponseDto
 }
