@@ -11,7 +11,8 @@
   journal API, OpenAPI и первый sync slice;
 - ✅ Android repository boundary, JSON v1 export и сохранённая Room schema v2;
 - ✅ Android API/JWT client, server workspace и выбор школы;
-- ○ Android sync DTO, Room replica/outbox и WorkManager;
+- ✅ Android sync DTO, UUID Room replica, transactional outbox и sync metadata;
+- ○ WorkManager, применение серверных результатов и conflict UI;
 - ○ progress/criterion API, защищённый HTTP import, deployment и наблюдаемость.
 
 ADR-0002 и ADR-0003 уточняют Android-интеграцию и заменяют первоначальный

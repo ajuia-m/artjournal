@@ -15,10 +15,13 @@
 - ○ snapshot endpoint, retention/compaction и `cursor_expired`;
 - ○ синхронизация занятий, прогресса и критериев;
 - ✅ Android JWT-клиент, rotation, восстановление сессии и выбор школы;
-- ○ Android sync DTO, UUID-модель, Room replica/outbox, WorkManager и conflict UI.
+- ✅ Android sync DTO, UUID-модель, Room replica/outbox, metadata/conflicts и
+  тесты атомарности/перезапуска;
+- ○ WorkManager, применение серверных результатов и conflict UI.
 
-Таким образом, ADR принят целиком как направление, но в коде завершён только
-первый backend vertical slice.
+Таким образом, backend vertical slice и надёжное локальное хранение команд
+готовы; сетевой Android sync loop и пользовательское разрешение конфликтов ещё
+не реализованы.
 
 ## Контекст
 
@@ -220,15 +223,17 @@ bundle либо подтвердить необратимое удаление.
 
 ### Android/Kotlin
 
-Статус раздела: **не реализовано**, кроме уже существующей границы
-`LocalJournalRepository` и ручного `AppContainer`.
+Статус раздела: пункты 1–5 реализованы для первого
+`StudentLessonState` slice. Новая server-база честно начинается с schema v1;
+фиктивная migration 1→2 не создаётся, а тест настоящей миграции появится с
+первым изменением schema v2.
 
-1. Ввести domain-модели с UUID отдельно от legacy Room entities.
-2. Добавить Room migration и таблицы outbox, metadata и conflicts.
-3. Создать `SyncJournalRepository`; локальную проекцию и outbox менять через
+1. ✅ Ввести UUID-модели отдельно от legacy Room entities.
+2. ✅ Добавить отдельную Room schema v1 и таблицы outbox, metadata и conflicts.
+3. ✅ Создать repository; локальную проекцию, sequence и outbox менять через
    `RoomDatabase.withTransaction`.
-4. Добавить Retrofit/Moshi DTO для commands, results, changes и snapshot.
-5. Реализовать защищённую JWT-сессию и single-flight refresh.
+4. ✅ Добавить Retrofit/Moshi DTO для commands, results и changes.
+5. ✅ Реализовать защищённую JWT-сессию и single-flight refresh.
 6. Добавить `SyncWorker`, connectivity constraints и bounded exponential backoff.
 7. Показывать статус sync и отдельный экран разрешения конфликтов.
 8. Не отправлять команды непосредственно из ViewModel или Compose.
