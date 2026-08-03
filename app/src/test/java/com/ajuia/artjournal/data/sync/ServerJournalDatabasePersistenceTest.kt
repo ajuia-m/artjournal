@@ -17,13 +17,19 @@ class ServerJournalDatabasePersistenceTest {
         val databaseName = "server-replica-persistence-test.db"
         context.deleteDatabase(databaseName)
         try {
-            open(context, databaseName).use { database ->
+            val database = open(context, databaseName)
+            try {
                 database.syncDao().insertOperation(operation())
                 assertEquals(1, database.syncDao().pendingOperationCount(SCHOOL_ID))
+            } finally {
+                database.close()
             }
-            open(context, databaseName).use { reopened ->
+            val reopened = open(context, databaseName)
+            try {
                 assertEquals(1, reopened.syncDao().pendingOperationCount(SCHOOL_ID))
                 assertEquals(OPERATION_ID, reopened.syncDao().pendingOperations(SCHOOL_ID, 10).single().operationId)
+            } finally {
+                reopened.close()
             }
         } finally {
             context.deleteDatabase(databaseName)
