@@ -23,19 +23,21 @@
 
 ## Project status
 
-Art Journal currently contains two working but not yet connected applications:
+Art Journal contains a local legacy journal, an Android server-workspace
+bootstrap and a Django backend:
 
-- the Android client is a single-user, local-first prototype. It stores ten
-  entity types in Room/SQLite and does not authenticate or send network
-  requests;
-- the Django/DRF backend provides PostgreSQL persistence, JWT authentication,
-  schools, memberships, teacher assignments, a protected journal API, a safe
-  JSON v1 importer, and the first offline synchronization slice for student
-  lesson states.
+- `Local legacy` remains a single-user Room/SQLite journal with ten entity
+  types and no server data mixed into its database;
+- `Server workspace` now supports JWT login, encrypted refresh-token
+  persistence, access-token rotation, session restoration and explicit school
+  selection;
+- the Django/DRF backend provides PostgreSQL persistence, schools, memberships,
+  teacher assignments, a protected journal API, a safe JSON v1 importer and the
+  first offline synchronization slice for student lesson states.
 
-The Android app still uses Room as the source of truth. Retrofit, Moshi and
-OkHttp are installed as integration dependencies, but no API client is created
-and the Android app is not connected to Django yet.
+The first Android/backend connection is deliberately limited to authentication
+and workspace selection. Server-backed journal reads, a UUID Room replica,
+outbox, WorkManager and conflict UI are not implemented yet.
 
 The planned server-backed mode is server-authoritative while still allowing
 supported offline writes. A future Room replica will store an atomic outbox;
@@ -54,15 +56,18 @@ protocol is specified in
 
 | Screen | Component | Current functionality |
 |---|---|---|
+| Workspace | `ServerWorkspaceScreen` | Separate local/server modes, JWT login, session restoration and school selection |
 | Journal | `JournalScreen` | Student/lesson table, grades `0–5`, attendance, homework points, notes and PDF export |
 | Topics | `ThemesScreen` | Assessed topics, criteria, maximum scores and individual progress `0–100%` |
 | Calendar | `ScheduleScreen` | Academic years, periods, holidays, subjects and weekly group schedules |
 | Analytics | `TrackerScreen` | Student comparison by subject, homework and attendance |
 | Settings | `SettingsScreen` | Archive, demo data, action log, JSON backup and legacy CSV clipboard exchange |
 
-`MainActivity` owns one `ArtJournalViewModel` and switches the five Compose
-screens with `Crossfade`; Navigation Compose is not used. Domain analytics are
-separated from the ViewModel and covered by deterministic JVM tests.
+`MainActivity` first selects an isolated workspace. Local mode owns one
+`ArtJournalViewModel` and switches the five journal screens with `Crossfade`.
+Server mode uses a separate `ServerWorkspaceViewModel` and session repository.
+Navigation Compose is not used. Domain analytics remain separated from the
+ViewModel and covered by deterministic JVM tests.
 
 ### Backend
 
@@ -157,9 +162,9 @@ links. See the [server data model](docs/server-data-model.md).
 | Room | `2.7.0` | Local SQLite database |
 | Coroutines | `1.10.2` | Asynchronous work and streams |
 | KSP | `2.3.5` | Room and Moshi code generation |
-| Retrofit | `2.12.0` | Installed for the future Android API client |
-| Moshi | `1.15.2` | Installed for future network DTOs |
-| OkHttp | `4.10.0` | Installed transport dependency |
+| Retrofit | `2.12.0` | JWT, account and school API client |
+| Moshi | `1.15.2` | Generated network DTO adapters |
+| OkHttp | `4.10.0` | Bearer-token interceptor, refresh authenticator and transport |
 | JUnit | `4.13.2` | JVM unit tests |
 | Robolectric | `4.16.1` | Android JVM tests |
 | Roborazzi | `1.59.0` | Screenshot tests |
@@ -239,7 +244,18 @@ terminal:
 ```
 
 The debug build uses Android's standard debug signing. No project-level debug
-keystore, API key or `.env` file is required for the current Android features.
+keystore or API key is required.
+
+`Server workspace` uses `http://10.0.2.2:8000/` by default, which reaches a
+backend running on the emulator host. Override the build-time URL for another
+HTTPS environment:
+
+```bash
+./gradlew assembleDebug -PARTJOURNAL_API_BASE_URL=https://api.example.test/
+```
+
+The URL must end with `/`. Cleartext traffic is denied except for the Android
+emulator development hosts `10.0.2.2` and `localhost`.
 
 ### Release build
 
@@ -353,8 +369,9 @@ python manage.py spectacular \
 pytest
 ```
 
-Android CI runs JVM tests, Robolectric, lint, a debug build, Room schema
-verification and a Compose smoke test on a managed Pixel 2/API 30 emulator.
+Android CI runs JVM and MockWebServer tests, Robolectric, lint, a debug build,
+Room schema verification and a Compose smoke test on a managed Pixel 2/API 30
+emulator.
 Backend CI runs Ruff, Django checks, migration drift detection, OpenAPI
 validation, Pytest, Docker Compose validation, a real PostgreSQL-backed stack
 and the health endpoint.
@@ -394,9 +411,10 @@ Statuses describe code already merged into `main`: **✅ completed**,
 
 - ✅ Integration and offline-write ADRs.
 - ✅ Android composition root and isolated `Local legacy` repository.
-- ○ Retrofit/Moshi API client, typed network errors, JWT lifecycle and school
-  selection.
-- ○ UUID Room replica, outbox, sync metadata, conflicts and migration tests.
+- ✅ Retrofit/Moshi API client, typed network errors, encrypted refresh token,
+  JWT rotation/session restoration and explicit school selection.
+- ○ Sync DTOs/mappers, UUID Room replica, outbox, sync metadata, conflicts and
+  migration tests.
 - ○ Server-backed reads and offline writes with visible sync states.
 - ○ Expand backend sync to lessons, progress and criteria; add snapshot recovery
   and retention.
@@ -410,8 +428,8 @@ Statuses describe code already merged into `main`: **✅ completed**,
 - ○ Pilot with 5–10 users and documented teacher feedback.
 - ○ Error monitoring, known-defect report and a production-oriented case study.
 
-Critical path: **Android API client, JWT and school selection → Room replica and
-outbox → offline attendance/grade synchronization → progress API → protected
+Critical path: **sync DTOs and UUID Room replica → outbox and WorkManager →
+offline attendance/grade synchronization → progress API → protected
 import → end-to-end tests → public demo**.
 
 ## Documentation
@@ -430,11 +448,12 @@ import → end-to-end tests → public demo**.
 
 ## Known limitations
 
-- The Android app and backend are tested independently but are not connected.
-- Android data uses local integer IDs and has no Room foreign keys or explicit
-  upgrade migrations.
-- The Android app has no login, school selection, Room outbox, WorkManager sync
-  or conflict UI.
+- Android and Django are connected only for authentication, session restoration
+  and school selection; journal data is not read from or written to the server.
+- Android legacy data uses local integer IDs and has no Room foreign keys or
+  explicit upgrade migrations.
+- The Android server workspace has no UUID Room replica, outbox, WorkManager
+  sync or conflict UI.
 - Backend sync covers student lesson states only and has no snapshot endpoint.
 - The protected HTTP import endpoint, progress API and server report export are
   not implemented.

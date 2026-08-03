@@ -1,7 +1,8 @@
 # Целевая серверная модель Art Journal
 
 > Статус: реализованы серверная модель, импорт JSON v1, JWT, роли, journal API и
-> первый sync slice для `StudentLessonState`. Android-клиент пока не подключён.
+> первый sync slice для `StudentLessonState`. Android подключён для JWT-сессии
+> и выбора школы; серверные данные журнала пока не подключены.
 
 Документ уточняет [ADR-0001](adr/0001-server-backed-architecture.md) и связывает
 нормализованную PostgreSQL-модель с

@@ -17,6 +17,8 @@ class JournalComposeUiTest {
 
   @Test
   fun demoDataCanBeLoadedAndReviewedAcrossMainSections() {
+    composeRule.onNodeWithTag("workspace-local").performClick()
+
     composeRule
       .onNodeWithText("Создайте или выберите группу зачета")
       .assertIsDisplayed()

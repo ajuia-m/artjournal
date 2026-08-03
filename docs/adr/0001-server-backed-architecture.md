@@ -10,7 +10,8 @@
 - ✅ backend skeleton, нормализованная модель, JSON v1 import, JWT, роли,
   journal API, OpenAPI и первый sync slice;
 - ✅ Android repository boundary, JSON v1 export и сохранённая Room schema v2;
-- ○ Android API/JWT client, server workspace, Room replica/outbox и WorkManager;
+- ✅ Android API/JWT client, server workspace и выбор школы;
+- ○ Android sync DTO, Room replica/outbox и WorkManager;
 - ○ progress/criterion API, защищённый HTTP import, deployment и наблюдаемость.
 
 ADR-0002 и ADR-0003 уточняют Android-интеграцию и заменяют первоначальный
