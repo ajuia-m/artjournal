@@ -27,8 +27,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import com.ajuia.artjournal.ui.*
 import com.ajuia.artjournal.ui.theme.*
+import com.ajuia.artjournal.data.session.WorkspaceMode
 import com.ajuia.artjournal.viewmodel.ArtJournalViewModel
 import com.ajuia.artjournal.viewmodel.ArtJournalViewModelFactory
+import com.ajuia.artjournal.viewmodel.ServerWorkspaceViewModel
+import com.ajuia.artjournal.viewmodel.ServerWorkspaceViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,42 +47,105 @@ class MainActivity : ComponentActivity() {
                 backupExporter = app.container.backupExporter
             )
         )[ArtJournalViewModel::class.java]
+        val serverWorkspaceViewModel = ViewModelProvider(
+            this,
+            ServerWorkspaceViewModelFactory(app.container.serverSessionRepository)
+        )[ServerWorkspaceViewModel::class.java]
 
         setContent {
             MyApplicationTheme {
-                val currentTab by viewModel.currentTab.collectAsState()
+                var workspaceMode by remember {
+                    mutableStateOf(app.container.workspacePreferences.readMode())
+                }
+                val selectWorkspace: (WorkspaceMode) -> Unit = { mode ->
+                    app.container.workspacePreferences.writeMode(mode)
+                    workspaceMode = mode
+                }
+                val clearWorkspace = {
+                    app.container.workspacePreferences.clearMode()
+                    workspaceMode = null
+                }
 
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    bottomBar = {
-                        ArtBottomBar(
-                            currentTab = currentTab,
-                            onTabSelected = { viewModel.setTab(it) }
+                when (workspaceMode) {
+                    null -> WorkspaceChooserScreen(
+                        onSelectLocal = { selectWorkspace(WorkspaceMode.LOCAL_LEGACY) },
+                        onSelectServer = { selectWorkspace(WorkspaceMode.SERVER) }
+                    )
+                    WorkspaceMode.LOCAL_LEGACY -> LocalLegacyApp(
+                        viewModel = viewModel,
+                        onSwitchWorkspace = clearWorkspace
+                    )
+                    WorkspaceMode.SERVER -> {
+                        val serverState by serverWorkspaceViewModel.uiState.collectAsState()
+                        LaunchedEffect(Unit) { serverWorkspaceViewModel.activate() }
+                        ServerWorkspaceScreen(
+                            state = serverState,
+                            onLogin = serverWorkspaceViewModel::login,
+                            onChooseSchool = serverWorkspaceViewModel::chooseSchool,
+                            onShowSchoolChooser = serverWorkspaceViewModel::showSchoolChooser,
+                            onRetry = serverWorkspaceViewModel::retrySessionRestore,
+                            onShowLogin = serverWorkspaceViewModel::showLogin,
+                            onLogout = serverWorkspaceViewModel::logout,
+                            onSwitchWorkspace = clearWorkspace
                         )
-                    },
-                    containerColor = DeepBlack
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .background(DeepBlack)
-                    ) {
-                        // Smooth anim crossfade between the 5 modules
-                        Crossfade(
-                            targetState = currentTab,
-                            animationSpec = tween(250),
-                            label = "screen_transitions"
-                        ) { tab ->
-                            when (tab) {
-                                "journal" -> JournalScreen(viewModel)
-                                "themes" -> ThemesScreen(viewModel)
-                                "schedule" -> ScheduleScreen(viewModel)
-                                "tracker" -> TrackerScreen(viewModel)
-                                "settings" -> SettingsScreen(viewModel)
-                            }
-                        }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocalLegacyApp(
+    viewModel: ArtJournalViewModel,
+    onSwitchWorkspace: () -> Unit
+) {
+    val currentTab by viewModel.currentTab.collectAsState()
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            Surface(color = DarkSurface, border = BorderStroke(1.dp, BorderGray)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Локальный журнал", color = PureWhite, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = onSwitchWorkspace) {
+                        Text("Сменить режим", color = PrimaryYellow)
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            ArtBottomBar(
+                currentTab = currentTab,
+                onTabSelected = { viewModel.setTab(it) }
+            )
+        },
+        containerColor = DeepBlack
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(DeepBlack)
+        ) {
+            Crossfade(
+                targetState = currentTab,
+                animationSpec = tween(250),
+                label = "screen_transitions"
+            ) { tab ->
+                when (tab) {
+                    "journal" -> JournalScreen(viewModel)
+                    "themes" -> ThemesScreen(viewModel)
+                    "schedule" -> ScheduleScreen(viewModel)
+                    "tracker" -> TrackerScreen(viewModel)
+                    "settings" -> SettingsScreen(viewModel)
                 }
             }
         }

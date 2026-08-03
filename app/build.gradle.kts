@@ -5,6 +5,10 @@ plugins {
   alias(libs.plugins.roborazzi)
 }
 
+val artJournalApiBaseUrl = providers.gradleProperty("ARTJOURNAL_API_BASE_URL")
+  .orElse(providers.environmentVariable("ARTJOURNAL_API_BASE_URL"))
+  .orElse("http://10.0.2.2:8000/")
+
 android {
   namespace = "com.ajuia.artjournal"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -15,6 +19,12 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
+
+    buildConfigField(
+      "String",
+      "ARTJOURNAL_API_BASE_URL",
+      "\"${artJournalApiBaseUrl.get().replace("\\", "\\\\").replace("\"", "\\\"")}\""
+    )
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -102,6 +112,7 @@ dependencies {
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.mockwebserver)
   testImplementation(libs.robolectric)
   testImplementation(libs.roborazzi)
   testImplementation(libs.roborazzi.compose)
