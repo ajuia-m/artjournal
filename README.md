@@ -413,8 +413,8 @@ Statuses describe code already merged into `main`: **✅ completed**,
 - ✅ Android composition root and isolated `Local legacy` repository.
 - ✅ Retrofit/Moshi API client, typed network errors, encrypted refresh token,
   JWT rotation/session restoration and explicit school selection.
-- ○ Sync DTOs/mappers, UUID Room replica, outbox, sync metadata, conflicts and
-  migration tests.
+- ✅ Protocol-v1 sync DTOs, UUID Room replica, transactional outbox, sync
+  metadata/conflicts and atomicity/restart tests.
 - ○ Server-backed reads and offline writes with visible sync states.
 - ○ Expand backend sync to lessons, progress and criteria; add snapshot recovery
   and retention.
@@ -428,8 +428,8 @@ Statuses describe code already merged into `main`: **✅ completed**,
 - ○ Pilot with 5–10 users and documented teacher feedback.
 - ○ Error monitoring, known-defect report and a production-oriented case study.
 
-Critical path: **sync DTOs and UUID Room replica → outbox and WorkManager →
-offline attendance/grade synchronization → progress API → protected
+Critical path: **WorkManager outbox delivery → offline attendance/grade
+synchronization → conflict UI → progress API → protected
 import → end-to-end tests → public demo**.
 
 ## Documentation
@@ -452,8 +452,8 @@ import → end-to-end tests → public demo**.
   and school selection; journal data is not read from or written to the server.
 - Android legacy data uses local integer IDs and has no Room foreign keys or
   explicit upgrade migrations.
-- The Android server workspace has no UUID Room replica, outbox, WorkManager
-  sync or conflict UI.
+- The Android server workspace has a UUID Room replica and durable outbox, but
+  no WorkManager delivery loop, server-result application or conflict UI.
 - Backend sync covers student lesson states only and has no snapshot endpoint.
 - The protected HTTP import endpoint, progress API and server report export are
   not implemented.

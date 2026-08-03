@@ -118,8 +118,8 @@ MainActivity` сначала выбирает изолированное раб�
 - ✅ Реализованы JWT-вход, AES-GCM хранение refresh token через Android Keystore,
   rotation, восстановление сессии и logout.
 - ✅ Доступные школы загружаются с сервера и выбираются явно.
-- ○ Добавить sync DTO/mappers, стабильные UUID, Room-таблицы
-  outbox/sync metadata/conflicts и миграционные тесты.
+- ✅ Добавлены sync DTO protocol v1, стабильные UUID, отдельная Room-реплика,
+  transactional outbox, sync metadata/conflicts и тесты атомарности/перезапуска.
 - ○ Расширить backend sync на занятия, зависимости команд, прогресс и критерии;
   добавить snapshot recovery и retention policy.
 - ○ Подключить server-backed чтение групп, учеников, занятий и состояний.
@@ -157,8 +157,8 @@ MainActivity` сначала выбирает изолированное раб�
 - ○ Перенести пункты roadmap в GitHub Issues и milestone после стабилизации
   состава ближайшего релиза.
 
-Ближайший критический путь: **sync DTO и UUID Room-реплика → outbox и
-WorkManager → offline-синхронизация посещаемости и оценок
+Ближайший критический путь: **отправка outbox через WorkManager →
+offline-синхронизация посещаемости и оценок → conflict UI
 → API прогресса и критериев → защищённый импорт → offline/online сквозной тест
 → публичная демоверсия**.
 
