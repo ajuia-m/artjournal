@@ -11,26 +11,29 @@
 - ✅ ручной `AppContainer`, repository boundary и изолированный режим
   `Local legacy`;
 - ✅ backend JWT, школы, роли, journal API и первый sync slice;
-- ○ Android API/JWT client, выбор школы и `Server workspace`;
-- ○ UUID Room replica, transactional outbox, WorkManager и conflict UI;
+- ✅ Android API/JWT client, зашифрованный refresh token, выбор школы и
+  отдельный `Server workspace`;
+- ○ sync DTO/mappers, UUID Room replica, transactional outbox, WorkManager и
+  conflict UI;
 - ○ защищённая миграция JSON v1 через HTTP и сквозной тест.
 
-Android и backend пока работают независимо; переключение workspace ещё не
-доступно пользователю.
+Android уже подключён к backend для JWT-сессии и выбора школы. Данные журнала
+пока доступны только в `Local legacy`; server replica и sync не реализованы.
 
 ## Контекст
 
 В репозитории существуют две рабочие, но пока не соединённые системы:
 
-- Android-приложение хранит десять типов сущностей в Room/SQLite, использует
-  локальные `Int` ID и уже обращается к Room через `LocalJournalRepository` и
-  ручной `AppContainer`, но ещё не имеет сетевой реализации repository;
+- Android-приложение хранит legacy-журнал в Room/SQLite с локальными `Int` ID,
+  а отдельный session repository выполняет JWT-вход, rotation и выбор школы;
+  сетевой journal repository и Room server replica ещё не реализованы;
 - Django/DRF backend хранит нормализованную модель в PostgreSQL, использует
   серверные UUID, JWT, школы, роли и проверку доступа к каждой операции.
 
 Backend уже поддерживает занятия, связи занятия с несколькими темами и состояния
-ученика на занятии. Android по-прежнему работает без сетевых запросов. Обход
-repository boundary прямыми Retrofit-вызовами из ViewModel создал бы два
+ученика на занятии. Android обращается к auth/account/schools API только через
+отдельный session repository; journal API пока не подключён. Обход repository
+boundary прямыми Retrofit-вызовами из ViewModel создал бы два
 источника истины и не определил бы, какая версия записи должна победить после
 ошибки, повторного запроса или работы на другом устройстве.
 

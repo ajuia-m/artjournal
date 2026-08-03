@@ -123,7 +123,8 @@ Policy layer находится в `apps.schools.access` и не зависит 
 
 ## Известные ограничения
 
-- Android-клиент ещё не получает и не хранит JWT.
+- Android-клиент получает JWT, хранит refresh token через Android Keystore,
+  обновляет access token и явно выбирает школу; journal/sync API пока не подключены.
 - Нет регистрации, подтверждения email, восстановления пароля и MFA.
 - Нет публичного endpoint импорта; management-команда остаётся локальной.
 - Встроенный DRF throttle использует текущий cache backend. Для нескольких

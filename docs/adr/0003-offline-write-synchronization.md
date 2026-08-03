@@ -14,7 +14,8 @@
 - ✅ единый транзакционный write path для REST и sync API;
 - ○ snapshot endpoint, retention/compaction и `cursor_expired`;
 - ○ синхронизация занятий, прогресса и критериев;
-- ○ Android UUID-модель, Room replica/outbox, JWT-клиент, WorkManager и conflict UI.
+- ✅ Android JWT-клиент, rotation, восстановление сессии и выбор школы;
+- ○ Android sync DTO, UUID-модель, Room replica/outbox, WorkManager и conflict UI.
 
 Таким образом, ADR принят целиком как направление, но в коде завершён только
 первый backend vertical slice.
