@@ -59,8 +59,8 @@ class ServerJournalReplicaRepositoryTest {
         assertEquals(ReplicaSyncState.PENDING, database.syncDao().state(ENTITY_ID)?.syncState)
         assertEquals(1, repository.pendingOperationCount(SCHOOL_ID))
         assertEquals(CLIENT_ID, staged.operation.clientId)
-        assertEquals(1, staged.operation.clientSequence)
-        assertEquals(3, staged.operation.baseVersion)
+        assertEquals(1L, staged.operation.clientSequence)
+        assertEquals(3L, staged.operation.baseVersion)
         assertTrue(staged.operation.payloadJson.contains("\"lessonId\":\"$LESSON_ID\""))
         assertTrue(staged.operation.payloadJson.contains("\"homeworkPoints\":87"))
     }
@@ -103,7 +103,7 @@ class ServerJournalReplicaRepositoryTest {
 
         assertTrue(failure.isFailure)
         assertNull(dao.state(ENTITY_ID))
-        assertEquals(1, dao.metadata(SCHOOL_ID)?.nextClientSequence)
+        assertEquals(1L, dao.metadata(SCHOOL_ID)?.nextClientSequence)
         assertEquals(1, dao.pendingOperationCount(SCHOOL_ID))
     }
 
