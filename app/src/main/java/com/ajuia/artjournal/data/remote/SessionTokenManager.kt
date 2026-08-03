@@ -11,6 +11,8 @@ import okhttp3.Response
 import okhttp3.Route
 import retrofit2.HttpException
 
+private const val AUTHORIZATION_HEADER = "Authorization"
+
 internal sealed interface RefreshOutcome {
     data class Success(val accessToken: String) : RefreshOutcome
     data object NoSession : RefreshOutcome
@@ -77,7 +79,7 @@ internal class BearerTokenInterceptor(
             chain.request()
         } else {
             chain.request().newBuilder()
-                .header(AUTHORIZATION, "Bearer $token")
+                .header(AUTHORIZATION_HEADER, "Bearer $token")
                 .build()
         }
         return chain.proceed(request)
@@ -90,7 +92,7 @@ internal class JwtAuthenticator(
     override fun authenticate(route: Route?, response: Response): Request? {
         if (responseCount(response) >= MAX_ATTEMPTS) return null
 
-        val tokenUsedByRequest = response.request.header(AUTHORIZATION)
+        val tokenUsedByRequest = response.request.header(AUTHORIZATION_HEADER)
             ?.removePrefix("Bearer ")
         val latestToken = tokenManager.currentAccessToken()
         if (latestToken != null && latestToken != tokenUsedByRequest) {
@@ -119,11 +121,10 @@ internal class JwtAuthenticator(
     }
 
     private fun Request.withBearerToken(token: String): Request = newBuilder()
-        .header(AUTHORIZATION, "Bearer $token")
+        .header(AUTHORIZATION_HEADER, "Bearer $token")
         .build()
 
     private companion object {
-        const val AUTHORIZATION = "Authorization"
         const val MAX_ATTEMPTS = 2
     }
 }
