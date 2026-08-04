@@ -13,6 +13,9 @@ import com.ajuia.artjournal.data.session.SharedPreferencesWorkspacePreferences
 import com.ajuia.artjournal.data.session.WorkspacePreferences
 import com.ajuia.artjournal.data.sync.ServerJournalDatabase
 import com.ajuia.artjournal.data.sync.ServerJournalReplicaRepository
+import com.ajuia.artjournal.data.sync.ServerJournalSyncEngine
+import com.ajuia.artjournal.data.sync.SyncRequestScheduler
+import com.ajuia.artjournal.data.sync.WorkManagerSyncRequestScheduler
 
 interface AppContainer {
     val localJournalRepository: LocalJournalRepository
@@ -20,6 +23,8 @@ interface AppContainer {
     val serverSessionRepository: ServerSessionRepository
     val workspacePreferences: WorkspacePreferences
     val serverJournalReplicaRepository: ServerJournalReplicaRepository
+    val serverJournalSyncEngine: ServerJournalSyncEngine
+    val serverJournalSyncScheduler: SyncRequestScheduler
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -51,7 +56,10 @@ class DefaultAppContainer(context: Context) : AppContainer {
             accountApi = apiClients.accountApi,
             schoolsApi = apiClients.schoolsApi,
             tokenManager = apiClients.tokenManager,
-            sessionStore = sessionStore
+            sessionStore = sessionStore,
+            // Keep WorkManager lazy: merely rendering the login screen must not initialize the
+            // scheduler (and Robolectric can launch MainActivity without a WorkManager test host).
+            onSchoolActivated = { schoolId -> serverJournalSyncScheduler.enqueue(schoolId) }
         )
     }
 
@@ -60,6 +68,20 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val serverJournalReplicaRepository: ServerJournalReplicaRepository by lazy {
-        ServerJournalReplicaRepository(serverDatabase)
+        ServerJournalReplicaRepository(
+            database = serverDatabase,
+            syncScheduler = serverJournalSyncScheduler
+        )
+    }
+
+    override val serverJournalSyncEngine: ServerJournalSyncEngine by lazy {
+        ServerJournalSyncEngine(
+            database = serverDatabase,
+            syncApi = apiClients.syncApi
+        )
+    }
+
+    override val serverJournalSyncScheduler: SyncRequestScheduler by lazy {
+        WorkManagerSyncRequestScheduler(applicationContext)
     }
 }

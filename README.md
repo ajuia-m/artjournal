@@ -35,15 +35,17 @@ bootstrap and a Django backend:
   teacher assignments, a protected journal API, a safe JSON v1 importer and the
   first offline synchronization slice for student lesson states.
 
-The first Android/backend connection is deliberately limited to authentication
-and workspace selection. Server-backed journal reads, a UUID Room replica,
-outbox, WorkManager and conflict UI are not implemented yet.
+The Android server workspace now includes the first synchronization foundation
+for `StudentLessonState`: a UUID Room replica, transactional outbox, persistent
+cursor, WorkManager delivery, atomic command-result handling, tombstones and
+explicit conflict/rejected states. Authentication or permanent client errors do
+not discard queued edits, while transient transport and server failures use
+bounded exponential retry.
 
-The planned server-backed mode is server-authoritative while still allowing
-supported offline writes. A future Room replica will store an atomic outbox;
-WorkManager will resend stable commands after connectivity returns. The backend
-already deduplicates commands, checks record versions, emits tombstones and
-serves a cursor-based change feed for `StudentLessonState`.
+This slice is not exposed as a complete journal screen yet. Server-backed
+groups, students and lessons, user-facing synchronization status and conflict
+resolution remain planned. PostgreSQL is authoritative; Room keeps a working
+replica and durable user intent until the backend accepts or rejects it.
 
 The integration boundary is specified in
 [ADR-0002](docs/adr/0002-android-server-integration.md), and the offline command
@@ -161,6 +163,7 @@ links. See the [server data model](docs/server-data-model.md).
 | Lifecycle | `2.8.7` | ViewModel, runtime and Compose integration |
 | Room | `2.7.0` | Local SQLite database |
 | Coroutines | `1.10.2` | Asynchronous work and streams |
+| WorkManager | `2.11.2` | Network-constrained durable outbox delivery |
 | KSP | `2.3.5` | Room and Moshi code generation |
 | Retrofit | `2.12.0` | JWT, account and school API client |
 | Moshi | `1.15.2` | Generated network DTO adapters |
@@ -371,7 +374,9 @@ pytest
 
 Android CI runs JVM and MockWebServer tests, Robolectric, lint, a debug build,
 Room schema verification and a Compose smoke test on a managed Pixel 2/API 30
-emulator.
+emulator. JVM/Robolectric coverage includes atomic outbox staging, command
+deduplication results, retry recovery, conflicts, rejection, multi-page cursor
+pulls and tombstones.
 Backend CI runs Ruff, Django checks, migration drift detection, OpenAPI
 validation, Pytest, Docker Compose validation, a real PostgreSQL-backed stack
 and the health endpoint.
@@ -415,7 +420,10 @@ Statuses describe code already merged into `main`: **✅ completed**,
   JWT rotation/session restoration and explicit school selection.
 - ✅ Protocol-v1 sync DTOs, UUID Room replica, transactional outbox, sync
   metadata/conflicts and atomicity/restart tests.
-- ○ Server-backed reads and offline writes with visible sync states.
+- ✅ WorkManager outbox delivery, atomic server-result application and
+  cursor-based `StudentLessonState` replica convergence.
+- ○ Connect the replica to server-backed journal screens and expose
+  pending/syncing/conflict/rejected states with conflict resolution.
 - ○ Expand backend sync to lessons, progress and criteria; add snapshot recovery
   and retention.
 - ○ End-to-end Android → JWT → Django → PostgreSQL recovery test.
@@ -428,8 +436,8 @@ Statuses describe code already merged into `main`: **✅ completed**,
 - ○ Pilot with 5–10 users and documented teacher feedback.
 - ○ Error monitoring, known-defect report and a production-oriented case study.
 
-Critical path: **WorkManager outbox delivery → offline attendance/grade
-synchronization → conflict UI → progress API → protected
+Critical path: **server-backed journal UI → offline attendance/grade editing
+→ conflict resolution UI → progress API → protected
 import → end-to-end tests → public demo**.
 
 ## Documentation
@@ -448,12 +456,13 @@ import → end-to-end tests → public demo**.
 
 ## Known limitations
 
-- Android and Django are connected only for authentication, session restoration
-  and school selection; journal data is not read from or written to the server.
+- Android and Django are connected for authentication, workspace selection and
+  the background `StudentLessonState` sync foundation, but the server-backed
+  journal UI does not use that replica yet.
 - Android legacy data uses local integer IDs and has no Room foreign keys or
   explicit upgrade migrations.
-- The Android server workspace has a UUID Room replica and durable outbox, but
-  no WorkManager delivery loop, server-result application or conflict UI.
+- The Android server workspace has a UUID Room replica, durable outbox and
+  WorkManager delivery, but no user-facing sync/conflict UI or snapshot recovery.
 - Backend sync covers student lesson states only and has no snapshot endpoint.
 - The protected HTTP import endpoint, progress API and server report export are
   not implemented.
