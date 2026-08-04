@@ -57,7 +57,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
             schoolsApi = apiClients.schoolsApi,
             tokenManager = apiClients.tokenManager,
             sessionStore = sessionStore,
-            onSchoolActivated = serverJournalSyncScheduler::enqueue
+            // Keep WorkManager lazy: merely rendering the login screen must not initialize the
+            // scheduler (and Robolectric can launch MainActivity without a WorkManager test host).
+            onSchoolActivated = { schoolId -> serverJournalSyncScheduler.enqueue(schoolId) }
         )
     }
 

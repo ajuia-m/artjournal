@@ -189,7 +189,9 @@ class ServerJournalSyncEngineTest {
             state(
                 entityId = DELETED_ENTITY_ID,
                 grade = 3,
-                version = 2
+                version = 2,
+                lessonId = DELETED_LESSON_ID,
+                studentId = DELETED_STUDENT_ID
             )
         )
         api.changePages.add(
@@ -314,12 +316,18 @@ class ServerJournalSyncEngineTest {
     private fun error(code: String, message: String): Map<String, Any?> =
         mapOf("code" to code, "message" to message, "fields" to emptyMap<String, Any?>())
 
-    private fun state(entityId: String, grade: Int, version: Long) =
+    private fun state(
+        entityId: String,
+        grade: Int,
+        version: Long,
+        lessonId: String = LESSON_ID,
+        studentId: String = STUDENT_ID
+    ) =
         ServerStudentLessonStateEntity(
             id = entityId,
             schoolId = SCHOOL_ID,
-            lessonId = LESSON_ID,
-            studentId = STUDENT_ID,
+            lessonId = lessonId,
+            studentId = studentId,
             grade = grade,
             serverVersion = version,
             updatedAtEpochMs = NOW
@@ -356,5 +364,7 @@ class ServerJournalSyncEngineTest {
         const val STUDENT_ID = "00000000-0000-0000-0000-000000000005"
         const val OPERATION_ID = "00000000-0000-0000-0000-000000000006"
         const val DELETED_ENTITY_ID = "00000000-0000-0000-0000-000000000007"
+        const val DELETED_LESSON_ID = "00000000-0000-0000-0000-000000000008"
+        const val DELETED_STUDENT_ID = "00000000-0000-0000-0000-000000000009"
     }
 }
