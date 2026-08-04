@@ -21,6 +21,7 @@ class ServerJournalReplicaRepositoryTest {
     private lateinit var database: ServerJournalDatabase
     private lateinit var repository: ServerJournalReplicaRepository
     private val ids = ArrayDeque<String>()
+    private val scheduledSchools = mutableListOf<String>()
 
     @Before
     fun setUp() {
@@ -31,7 +32,8 @@ class ServerJournalReplicaRepositoryTest {
         repository = ServerJournalReplicaRepository(
             database = database,
             uuidSource = UuidSource { ids.removeFirst() },
-            clock = EpochMillisSource { 1_722_510_000_000 }
+            clock = EpochMillisSource { 1_722_510_000_000 },
+            syncScheduler = SyncRequestScheduler { schoolId -> scheduledSchools.add(schoolId) }
         )
     }
 
@@ -63,6 +65,7 @@ class ServerJournalReplicaRepositoryTest {
         assertEquals(3L, staged.operation.baseVersion)
         assertTrue(staged.operation.payloadJson.contains("\"lessonId\":\"$LESSON_ID\""))
         assertTrue(staged.operation.payloadJson.contains("\"homeworkPoints\":87"))
+        assertEquals(listOf(SCHOOL_ID), scheduledSchools)
     }
 
     @Test
@@ -105,6 +108,7 @@ class ServerJournalReplicaRepositoryTest {
         assertNull(dao.state(ENTITY_ID))
         assertEquals(1L, dao.metadata(SCHOOL_ID)?.nextClientSequence)
         assertEquals(1, dao.pendingOperationCount(SCHOOL_ID))
+        assertTrue(scheduledSchools.isEmpty())
     }
 
     private companion object {

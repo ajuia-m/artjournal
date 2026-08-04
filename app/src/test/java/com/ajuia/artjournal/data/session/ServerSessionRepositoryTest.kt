@@ -21,6 +21,7 @@ class ServerSessionRepositoryTest {
     private lateinit var store: InMemorySessionStore
     private lateinit var clients: ApiClients
     private lateinit var repository: ServerSessionRepository
+    private val activatedSchools = mutableListOf<String>()
 
     @Before
     fun setUp() {
@@ -37,7 +38,8 @@ class ServerSessionRepositoryTest {
             accountApi = clients.accountApi,
             schoolsApi = clients.schoolsApi,
             tokenManager = clients.tokenManager,
-            sessionStore = store
+            sessionStore = store,
+            onSchoolActivated = { schoolId -> activatedSchools.add(schoolId) }
         )
     }
 
@@ -63,6 +65,7 @@ class ServerSessionRepositoryTest {
 
         assertEquals(SCHOOL_ID, store.selectedSchoolId)
         assertEquals("teacher", selected.selectedSchool?.role)
+        assertEquals(listOf(SCHOOL_ID), activatedSchools)
         assertEquals("/api/v1/auth/token/", server.takeRequest().path)
         assertEquals("Bearer access-1", server.takeRequest().getHeader("Authorization"))
         assertEquals("Bearer access-1", server.takeRequest().getHeader("Authorization"))
@@ -90,6 +93,7 @@ class ServerSessionRepositoryTest {
 
         assertEquals("refresh-2", store.refreshToken)
         assertEquals(SCHOOL_ID, restored?.selectedSchool?.id)
+        assertEquals(listOf(SCHOOL_ID), activatedSchools)
     }
 
     @Test

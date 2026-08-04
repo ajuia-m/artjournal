@@ -33,15 +33,16 @@ token, обновление access token, восстановление сесс�
 школы.
 
 Backend содержит нормализованную серверную модель, JSON v1 importer, школы,
-членства, роли, защищённый journal API и первый sync slice. Подключение Android
-пока ограничено авторизацией и выбором школы: серверное чтение журнала, UUID
-Room-реплика, outbox, WorkManager и UI конфликтов ещё не реализованы.
+членства, роли, защищённый journal API и первый sync slice. В Android уже есть
+UUID Room-реплика `StudentLessonState`, транзакционный outbox, cursor и доставка
+через WorkManager. Результаты сервера и change feed применяются атомарно;
+конфликтные и отклонённые изменения не теряются.
 
-Первое подключение Android будет server-authoritative, но позволит изменять
-поддерживаемые данные без сети. Room хранит рабочую копию и транзакционный
-outbox, а WorkManager отправляет операции после восстановления соединения.
-Сервер дедуплицирует команды, проверяет версию записи и возвращает явный
-конфликт вместо скрытого last-write-wins. Стратегия подключения и sync-протокол
+Эта основа ещё не подключена к полноценному экрану серверного журнала: чтение
+групп, учеников и занятий, видимые статусы синхронизации и UI разрешения
+конфликтов остаются следующими задачами. PostgreSQL является источником истины,
+а Room хранит рабочую копию и неподтверждённые намерения пользователя.
+Стратегия подключения и sync-протокол
 зафиксированы в [ADR-0002](docs/adr/0002-android-server-integration.md) и
 [ADR-0003](docs/adr/0003-offline-write-synchronization.md).
 
@@ -56,7 +57,7 @@ outbox, а WorkManager отправляет операции после восс
 | **Аналитика** | `TrackerScreen` | Сравнение учеников по дисциплинам, домашней работе и посещаемости |
 | **Настройки** | `SettingsScreen` | Архив, демонстрационные данные, журнал действий и CSV-обмен через буфер |
 
-MainActivity` сначала выбирает изолированное рабочее пространство.
+`MainActivity` сначала выбирает изолированное рабочее пространство.
 Локальный режим использует `ArtJournalViewModel` и переключает пять экранов
 через `Crossfade`; серверный режим использует отдельный
 `ServerWorkspaceViewModel`. Navigation Compose не используется.
@@ -120,13 +121,16 @@ MainActivity` сначала выбирает изолированное раб�
 - ✅ Доступные школы загружаются с сервера и выбираются явно.
 - ✅ Добавлены sync DTO protocol v1, стабильные UUID, отдельная Room-реплика,
   transactional outbox, sync metadata/conflicts и тесты атомарности/перезапуска.
+- ✅ Реализованы доставка outbox через WorkManager, атомарное применение
+  command results, cursor change feed, tombstone и сохранение конфликтов.
 - ○ Расширить backend sync на занятия, зависимости команд, прогресс и критерии;
   добавить snapshot recovery и retention policy.
-- ○ Подключить server-backed чтение групп, учеников, занятий и состояний.
+- ○ Подключить server-backed чтение групп, учеников и занятий и вывести
+  существующую реплику состояний в journal UI.
 - ○ Подключить локальное создание и изменение занятия, посещаемости, оценки,
   домашней работы и прогресса с атомарной записью операции в outbox.
-- ○ Запускать отправку outbox через WorkManager и показывать статусы
-  `pending`/`syncing`/`conflict`/`rejected` в интерфейсе.
+- ○ Показывать статусы `pending`/`syncing`/`conflict`/`rejected` в интерфейсе и
+  реализовать осознанное разрешение конфликтов.
 - ○ Реализовать контролируемый перенос JSON v1 из `Local legacy` в
   `Server workspace` без повторного смешивания данных.
 - ○ Добавить сквозной тест Android → JWT → Django API → PostgreSQL → повторное
@@ -157,8 +161,8 @@ MainActivity` сначала выбирает изолированное раб�
 - ○ Перенести пункты roadmap в GitHub Issues и milestone после стабилизации
   состава ближайшего релиза.
 
-Ближайший критический путь: **отправка outbox через WorkManager →
-offline-синхронизация посещаемости и оценок → conflict UI
+Ближайший критический путь: **server-backed journal UI → локальное изменение
+посещаемости и оценок без сети → UI разрешения конфликтов
 → API прогресса и критериев → защищённый импорт → offline/online сквозной тест
 → публичная демоверсия**.
 
@@ -245,15 +249,16 @@ DI-фреймворк не используется. `ArtJournalApplication` с�
 | Lifecycle | `2.8.7` | ViewModel, runtime и Compose-интеграция |
 | Room | `2.7.0` | Локальная база SQLite |
 | Kotlin Coroutines | `1.10.2` | Асинхронные операции и потоки |
+| WorkManager | `2.11.2` | Надёжная доставка outbox при наличии сети |
 | KSP | `2.3.5` | Генерация Room-кода |
 | JUnit | `4.13.2` | JVM-тесты |
 | Robolectric | `4.16.1` | Android-тесты на JVM |
 | Roborazzi | `1.59.0` | Screenshot-тест |
 
-Retrofit, Moshi и OkHttp используются для JWT, профиля пользователя и списка
-школ. Bearer interceptor и authenticator обновляют access token, а refresh token
-хранится в зашифрованном виде через Android Keystore. Journal API и sync API
-Android-клиент пока не вызывают.
+Retrofit, Moshi и OkHttp используются для JWT, профиля пользователя, списка
+школ и sync API. Bearer interceptor и authenticator обновляют access token, а
+refresh token хранится в зашифрованном виде через Android Keystore. Обычный
+journal API пока не подключён к Android UI.
 
 ### Backend
 
@@ -441,6 +446,9 @@ export KEY_PASSWORD=your_key_password
 - `ExampleRobolectricTest` — ресурс приложения и запуск `MainActivity`;
 - `ServerSessionRepositoryTest` — JWT-вход, ошибки, rotation, автоматический
   retry, восстановление и отзыв сессии через MockWebServer;
+- `ServerJournalReplicaRepositoryTest` и `ServerJournalSyncEngineTest` —
+  атомарный outbox, применение/повтор команд, retry, конфликты, отказ,
+  многостраничный cursor pull и tombstone;
 - `GreetingScreenshotTest` — пример Roborazzi screenshot-теста;
 - `JournalComposeUiTest` — запуск `MainActivity` на эмуляторе, переходы между
   основными разделами, загрузка демо-данных и проверка журнала.
@@ -475,18 +483,20 @@ Compose UI пока покрывает один критический скво�
 
 ## Технический статус
 
-Проект остаётся прототипом: Android уже соединён с backend для JWT-сессии и
-выбора школы, но серверные данные журнала ещё не подключены. До использования с
-реальными персональными данными необходимо закрыть Room-реплику, offline sync,
-наблюдаемость, миграцию и deployment из
+Проект остаётся прототипом: Android уже соединён с backend для JWT-сессии,
+выбора школы и фоновой синхронизации `StudentLessonState`, но серверный journal
+UI ещё не подключён. До использования с реальными персональными данными нужны
+UI синхронизации/конфликтов, snapshot recovery, наблюдаемость, миграция и
+deployment из
 [roadmap](#roadmap).
 
 Основные ограничения текущего `main`:
 
 - Android использует локальные `Int` ID без Room foreign keys и явных upgrade
   migrations;
-- в Android реализованы login и выбор школы, но отсутствуют UUID Room-реплика,
-  outbox, WorkManager sync и UI конфликтов;
+- в Android реализованы login, выбор школы, UUID Room-реплика, outbox и
+  WorkManager sync для `StudentLessonState`, но отсутствует journal UI над этой
+  репликой и пользовательское разрешение конфликтов;
 - backend sync охватывает только состояния учеников и не имеет snapshot
   endpoint;
 - защищённый HTTP import endpoint, progress API и серверный экспорт отчётов

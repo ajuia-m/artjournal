@@ -31,6 +31,7 @@ class ServerJournalReplicaRepository(
     private val database: ServerJournalDatabase,
     private val uuidSource: UuidSource = UuidSource { UUID.randomUUID().toString() },
     private val clock: EpochMillisSource = EpochMillisSource(System::currentTimeMillis),
+    private val syncScheduler: SyncRequestScheduler = NoOpSyncRequestScheduler,
     moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
 ) {
     private val dao = database.syncDao()
@@ -63,7 +64,7 @@ class ServerJournalReplicaRepository(
             "homeworkPoints must be null or between 0 and 101"
         }
         val now = clock.now()
-        return database.withTransaction {
+        val staged = database.withTransaction {
             val metadata = metadataForSchool(schoolId)
             val sequence = metadata.nextClientSequence
             dao.updateNextSequence(schoolId, sequence + 1)
@@ -109,6 +110,11 @@ class ServerJournalReplicaRepository(
             dao.insertOperation(operation)
             StagedStateChange(state, operation)
         }
+        // The durable Room transaction is the source of truth. A scheduler failure must not make
+        // the caller believe that the already-committed local edit was lost; session restore or a
+        // later edit will enqueue another unique sync chain.
+        runCatching { syncScheduler.enqueue(schoolId) }
+        return staged
     }
 
     private suspend fun metadataForSchool(schoolId: String): SyncMetadataEntity {

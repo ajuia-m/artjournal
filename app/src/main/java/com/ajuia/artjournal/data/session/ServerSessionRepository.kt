@@ -34,7 +34,8 @@ class ServerSessionRepository internal constructor(
     private val accountApi: AccountApi,
     private val schoolsApi: SchoolsApi,
     private val tokenManager: SessionTokenManager,
-    private val sessionStore: SessionStore
+    private val sessionStore: SessionStore,
+    private val onSchoolActivated: (String) -> Unit = {}
 ) {
     fun hasStoredSession(): Boolean = tokenManager.hasStoredSession()
 
@@ -61,6 +62,7 @@ class ServerSessionRepository internal constructor(
         val school = session.schools.firstOrNull { it.id == schoolId }
             ?: throw IllegalArgumentException("School is not available to the current user.")
         sessionStore.writeSelectedSchoolId(school.id)
+        runCatching { onSchoolActivated(school.id) }
         return session.copy(selectedSchool = school)
     }
 
@@ -93,6 +95,7 @@ class ServerSessionRepository internal constructor(
             if (selectedSchoolId != null && selectedSchool == null) {
                 sessionStore.clearSelectedSchoolId()
             }
+            selectedSchool?.let { school -> runCatching { onSchoolActivated(school.id) } }
             val displayName = listOf(userDto.firstName, userDto.lastName)
                 .filter(String::isNotBlank)
                 .joinToString(" ")

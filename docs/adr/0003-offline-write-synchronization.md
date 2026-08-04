@@ -17,11 +17,13 @@
 - ✅ Android JWT-клиент, rotation, восстановление сессии и выбор школы;
 - ✅ Android sync DTO, UUID-модель, Room replica/outbox, metadata/conflicts и
   тесты атомарности/перезапуска;
-- ○ WorkManager, применение серверных результатов и conflict UI.
+- ✅ WorkManager delivery, применение серверных результатов, cursor pull,
+  tombstone и сохранение conflict/rejected состояний;
+- ○ пользовательский sync status и conflict resolution UI.
 
 Таким образом, backend vertical slice и надёжное локальное хранение команд
-готовы; сетевой Android sync loop и пользовательское разрешение конфликтов ещё
-не реализованы.
+готовы; сетевой Android sync loop реализован для `StudentLessonState`, а
+пользовательское разрешение конфликтов ещё не реализовано.
 
 ## Контекст
 
@@ -223,7 +225,7 @@ bundle либо подтвердить необратимое удаление.
 
 ### Android/Kotlin
 
-Статус раздела: пункты 1–5 реализованы для первого
+Статус раздела: пункты 1–6 реализованы для первого
 `StudentLessonState` slice. Новая server-база честно начинается с schema v1;
 фиктивная migration 1→2 не создаётся, а тест настоящей миграции появится с
 первым изменением schema v2.
@@ -234,7 +236,7 @@ bundle либо подтвердить необратимое удаление.
    `RoomDatabase.withTransaction`.
 4. ✅ Добавить Retrofit/Moshi DTO для commands, results и changes.
 5. ✅ Реализовать защищённую JWT-сессию и single-flight refresh.
-6. Добавить `SyncWorker`, connectivity constraints и bounded exponential backoff.
+6. ✅ Добавить `SyncWorker`, connectivity constraints и bounded exponential backoff.
 7. Показывать статус sync и отдельный экран разрешения конфликтов.
 8. Не отправлять команды непосредственно из ViewModel или Compose.
 
@@ -267,7 +269,8 @@ bundle либо подтвердить необратимое удаление.
 
 1. Общий protocol schema, UUID и server versions.
 2. Backend command log, один handler для `StudentLessonState`, change feed и тесты.
-3. Android outbox/worker для посещаемости и оценок, включая перезапуск процесса.
+3. ✅ Android outbox/worker для состояний занятия, включая восстановление
+   зависшей отправки после перезапуска процесса.
 4. Conflict UI и сценарий отзыва membership.
 5. Занятия и зависимые команды, затем progress/criterion scores.
 6. Snapshot recovery, нагрузочные ограничения и полный offline/online E2E.
